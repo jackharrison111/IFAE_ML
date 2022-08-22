@@ -1,0 +1,325 @@
+---
+"SR_1_VLL_ED500_0Z0b":
+  Type: SIGNAL
+  Title: "VLL E 500"
+  TexTitle: "$t\bar{t}H$"
+  #Group: "E_{400}(NN)"
+  Group: "NN#rightarrowWWll"
+  FillColor: 1
+  LineColor: 1
+  NtuplePath: XXX_Signal_Path
+  #NtupleFiles: 500_E_doublet 
+  NtupleFiles: mc16a/p4416//512075, mc16d/p4416//512075_AF, mc16e/p4416//512075_AF
+  Selection: VLL_type==3 && VLL_decaytype==3
+  MCweight: XXX_MC_WEIGHT**2
+
+"SR_2_VLL_MD500_2Z0b":
+  Type: SIGNAL
+  Title: "VLL M 500"
+  TexTitle: "$t\bar{t}H$"
+  #Group: "M_{500}(NN)"
+  Group: "LL#rightarrowZZll"
+  FillColor: 1
+  LineColor: 1
+  NtuplePath: XXX_Signal_Path
+ #NtupleFiles: 500_mu_singlet 
+  NtupleFiles: mc16a/p4416/512114, mc16d/p4416/512114_AF, mc16e/p4416/512114_AF
+  Selection: VLL_type==1 && VLL_decaytype==1
+  MCweight: XXX_MC_WEIGHT**2
+
+"SR_3_VLL_MD500_0Z1b":
+  Type: SIGNAL
+  Title: "VLL E 400"
+  TexTitle: "$t\bar{t}H$"
+  Group: "LL#rightarrowHHll"
+  FillColor: 632
+  LineColor: 1
+  NtuplePath: XXX_Signal_Path
+  #NtupleFiles: 500_M_doublet 
+  NtupleFiles: mc16a/p4416/512101, mc16d/p4416/512101_AF, mc16e/p4416/512101_AF
+  Selection: VLL_type==1 && VLL_decaytype==2
+  MCweight: XXX_MC_WEIGHT**2
+
+
+"SR_4_VLL_MD500_2Z0b_2sfos":
+  Type: SIGNAL
+  Title: "VLL E 400"
+  TexTitle: "$t\bar{t}H$"
+  Group: "LL#rightarrowHZll"
+  FillColor: 632
+  LineColor: 1
+  NtuplePath: XXX_Signal_Path
+  #NtupleFiles: 500_mu_doublet 
+  NtupleFiles: mc16a/p4416/512101, mc16d/p4416/512101_AF, mc16e/p4416/512101_AF
+  Selection: VLL_type==1 && VLL_decaytype==4
+  MCweight: XXX_MC_WEIGHT**2
+
+#################
+## 4 lep regions
+#################
+
+"Data":
+  Type: DATA
+  Title: "Data"
+  TexTitle: $Data$
+  NtupleFiles: data/data15, data/data16, data/data17, data/data18
+#  Regions: "CR*"
+
+"VV":
+  Type: BACKGROUND
+  Title: "VV"
+  TexTitle: $VV$+light
+  Group: "VV"
+  FillColor: 417
+  LineColor: 1
+  NtupleFiles: XXX_VV_samples, XXX_ggVV_samples
+  Selection: XXX_NONQMISID  && XXX_PROMPT
+#  Regions: "SR*","CR*","Zgamma*"
+  MCweight: XXX_MC_WEIGHT**2
+
+#  Type: BACKGROUND
+#  Title: "ZZ"
+#  TexTitle: ZZ
+#  Group: "ZZ"
+#  FillColor: 419
+#  LineColor: 1
+#  NtupleFiles: XXX_ZZ_samples
+#  #NtupleFiles: XXX_VV_samples, XXX_ggVV_samples  
+#  Selection: XXX_NONQMISID && XXX_PROMPT
+#  MCweight: XXX_MC_WEIGHT**2
+###  Regions: "SR*","CR*","Zgamma*"
+
+
+"threeV":
+  Type: BACKGROUND
+  Title: "#it{VVV}"
+  TexTitle: $VVV$
+  Group: VVV
+  FillColor: 616
+  LineColor: 1
+  NtupleFiles: XXX_VVV_samples
+  Selection: XXX_NONQMISID  && XXX_PROMPT
+  MCweight: XXX_MC_WEIGHT**2
+#  Regions: "SR*","CR*"
+
+#  Type: BACKGROUND
+#  Title: "#it{WWW}"
+#  TexTitle: $WWW$
+#  Group: WWW
+#  FillColor: 46
+#  LineColor: 1
+#  NtupleFiles: XXX_WWW_samples
+#  Selection: XXX_NONQMISID  && XXX_PROMPT
+#  MCweight: XXX_MC_WEIGHT**2
+##  Regions: "SR*","CR*"
+
+#  Type: BACKGROUND
+#  Title: "#it{WWZ} (4l2#nu)"
+#  TexTitle: $WWZ$
+#  Group: "WWZ (4l2#nu)"
+#  FillColor: 47
+#  LineColor: 1
+#  NtupleFiles: XXX_4l2nu_WWZ
+#  Selection: XXX_NONQMISID  && XXX_PROMPT
+#  MCweight: XXX_MC_WEIGHT**2
+##  Regions: "SR*","CR*"
+
+#  Type: BACKGROUND
+#  Title: "#it{WWZ} (2l4#nu)"
+#  TexTitle: $WWZ$
+#  Group: "WWZ (2l4#nu)"
+#  FillColor: 48
+#  LineColor: 1
+#  NtupleFiles: XXX_2l4nu_WWZ
+#  Selection: XXX_NONQMISID  && XXX_PROMPT
+#  MCweight: XXX_MC_WEIGHT**2
+##  Regions: "SR*","CR*"
+
+#  Type: BACKGROUND
+#  Title: "#it{WZZ}"
+#  TexTitle: $WZZ$
+#  Group: WZZ
+#  FillColor: 49
+#  LineColor: 1
+#  NtupleFiles: XXX_WZZ_samples
+#  Selection: XXX_NONQMISID  && XXX_PROMPT
+#  MCweight: XXX_MC_WEIGHT**2
+##  Regions: "SR*","CR*"
+
+#  Type: BACKGROUND
+#  Title: "#it{ZZZ}"
+#  TexTitle: $ZZZ$
+#  Group: ZZZ
+#  FillColor: 50
+#  LineColor: 1
+#  NtupleFiles: XXX_ZZZ_samples
+#  Selection: XXX_NONQMISID  && XXX_PROMPT
+#  MCweight: XXX_MC_WEIGHT**2
+##  Regions: "SR*","CR*"
+
+
+"VH":
+  Type: BACKGROUND
+  Title: "#it{VH}"
+  TexTitle: $VH$
+  Group: VH
+  FillColor: 609
+  LineColor: 1
+  NtupleFiles: XXX_VH_alt_samples
+  Selection: XXX_NONQMISID  && XXX_PROMPT 
+  MCweight: XXX_MC_WEIGHT**2
+#  Regions: "SR*","CR*"
+  
+
+
+#  Type: BACKGROUND
+#  Title: "t#bar{t}(Z/#gamma*)"
+#  TexTitle: $t\bar{t}Z/\gamma$
+#  Group: "t#bar{t}(Z/#gamma*)"
+#  FillColor: 417
+#  LineColor: 1
+#  NtupleFiles: XXX_ttll_lowMass_samples
+##  Regions: "SR*","CR*"
+#  MCweight: 1.12*XXX_MC_WEIGHT**2 #k-factor ad-hoc
+
+#  Type: BACKGROUND
+#  Title: "rareTop"
+#  TexTitle: $rareTop$
+#  Group: "t#bar{t}(Z/#gamma*)"
+#  FillColor: 417
+#  LineColor: 1
+#  NtupleFiles: XXX_rareTop_samples
+##  Regions: "SR*","CR*"
+#  #Selection: ((top1Mass*1e-3*(top1Mass>top2Mass)+top2Mass*1e-3*(top1Mass<top2Mass))<175)
+#  MCweight: 1.54*((top1Mass*1e-3 < 175 && top1Mass>top2Mass)+(top2Mass*1e-3 < 175 && top1Mass<top2Mass))*XXX_MC_WEIGHT**2 #k-factor ad-hoc
+
+#  Type: BACKGROUND
+#  Title: "VV"
+#  TexTitle: $VV$
+#  Group: "Diboson"
+#  FillColor: 419
+#  LineColor: 1
+#  NtupleFiles: XXX_ggVV_samples
+##  Regions: "SR*","CR*"
+#  MCweight: (XXX_MC_WEIGHT**2)*1.2
+
+
+#####################
+## Top Group
+#####################
+
+"ttZ":
+  Type: BACKGROUND
+  Title: "t#bar{t}(Z/#gamma*)"
+  TexTitle: $t\bar{t}Z/\gamma$
+  Group: "t#bar{t}Z"
+  FillColor: 870
+  LineColor: 1
+  NtupleFiles: XXX_ttZalt_samples
+  Selection: XXX_NONQMISID  && XXX_PROMPT
+  MCweight: XXX_MC_WEIGHT**2#*1.31/1.67
+#  Regions: "SR*","CR*"
+
+
+"fourTop":
+  Type: BACKGROUND
+  Title: "Four top"
+  FillColor: 857
+  Group: "Other Top"
+  LineColor: 1
+  NtupleFiles: XXX_fourTop_samples
+  Selection: XXX_NONQMISID && XXX_PROMPT
+  MCweight: XXX_MC_WEIGHT**2
+#  Regions: "SR*","CR*"
+
+"WttW":
+  Type: BACKGROUND
+  Title: "#it{t#bar{t}WW}"
+  TexTitle: $t\bar{t}WW$
+  Group: "Other Top"
+  FillColor: 857
+  LineColor: 1
+  NtupleFiles: XXX_ttWW_samples
+  Selection: XXX_NONQMISID && XXX_PROMPT
+#  Regions: "SR*","CR*"
+  MCweight: XXX_MC_WEIGHT**2
+  
+
+"ttH":
+  Type: BACKGROUND
+  Title: "t#bar{t}H"
+  TexTitle: "$t\bar{t}H$"
+  Group: "t#bar{t}H"
+  FillColor: 859
+  LineColor: 1
+  NtupleFiles: XXX_ttH_samples 
+  Selection: XXX_NONQMISID && XXX_PROMPT
+  MCweight: XXX_MC_WEIGHT**2
+
+"WtZ":
+  Type: BACKGROUND
+  Title: "#it{WtZ}"
+  TexTitle: $WtZ$
+  Group: "Other Top"
+  FillColor: 857
+  LineColor: 1
+  NtupleFiles: XXX_WtZ_samples
+  Selection: XXX_NONQMISID  && XXX_PROMPT
+  MCweight: XXX_MC_WEIGHT**2
+#  Regions: "SR*","CR*"
+  
+#  Type: BACKGROUND
+#  Title: "t#bar{t}W+b"
+#  TexTitle: $t\bar{t}W+b$
+#  Group: "Top"
+#  FillColor: 857
+#  LineColor: 1
+#  NtupleFiles: XXX_ttW2210_EW_samples
+#  Selection: XXX_NONQMISID && XXX_PROMPT
+#  MCweight: XXX_MC_WEIGHT**2
+###  Regions: "SR*","CR*"
+
+#  Type: BACKGROUND
+#  Title: "#it{tHjb}"
+#  TexTitle: $tHjb$
+#  Group: Top
+#  FillColor: 857
+#  LineColor: 1
+#  NtupleFiles: XXX_tWH_samples
+#  Selection: XXX_NONQMISID
+#  MCweight: XXX_MC_WEIGHT**2
+##  Regions: "SR*","CR*"
+  
+
+
+######################################
+
+##################
+### Fakes
+##################
+
+################
+## Fakes using QmisID ONLY (no misID)
+################
+#  Type: BACKGROUND
+#  Title: "QMisID" 
+#  TexTitle: QMisID
+#  FillColor: 619
+#  LineColor: 1
+#  NtupleFiles: XXX_ALL
+#  Selection: !XXX_NONQMISID && XXX_PROMPT
+#  Group: "QMisID"
+#  MCweight: XXX_MC_WEIGHT**2
+
+"Fakes_nonPrompt":
+  Type: BACKGROUND
+  Title: "Prompt" 
+  TexTitle: "Non-prompt"
+  FillColor: 632
+  LineColor: 1
+  NtupleFiles: XXX_ALL
+  #NtupleFiles: XXX_ZZ_samples
+  Selection: XXX_NONQMISID && !XXX_PROMPT 
+  #Selection: XXX_NONQMISID && !XXX_PROMPT && !((abs(lep_ID_0)==11&&lep_truthOrigin_0==0)||(abs(lep_ID_1)==11&&lep_truthOrigin_1==0)||(abs(lep_ID_2)==11&&lep_truthOrigin_2==0)||(abs(lep_ID_3)==11&&lep_truthOrigin_3==0))
+  Group: "Non-prompt"
+  MCweight: XXX_MC_WEIGHT**2
