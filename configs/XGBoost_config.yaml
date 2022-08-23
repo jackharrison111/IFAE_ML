@@ -1,0 +1,4 @@
+samples_path : '/data/at3/scratch3/jharrison/nominal_feather/Regions'
+background_feather : 'CR_1Z_0b_2SFOS_newvars.ftr'
+signal_feather : 'CR_1Z_0b_2SFOS_VLLs_newvars.ftr'
+
