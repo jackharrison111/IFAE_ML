@@ -27,10 +27,13 @@ from sklearn.model_selection import train_test_split
 
 class DatasetHandler():
     
-    def __init__(self, dataset_config=None):
+    def __init__(self, dataset_config=None, scalers=None):
         
-        with open(dataset_config, 'r') as f:
-            self.config = yaml.safe_load(f)
+        if type(dataset_config) == str:
+            with open(dataset_config, 'r') as f:
+                self.config = yaml.safe_load(f)
+        else:
+            self.config = dataset_config
             
         data_path = os.path.join(self.config['samples_path'],self.config['feather_file'])
         
@@ -38,7 +41,7 @@ class DatasetHandler():
         self.calculate_mcweight()
         self.reduce_to_training_variables(self.config['training_variables'])
         self.clean_dataset()
-        self.scale_variables()
+        self.scale_variables(scalers=scalers)
         
         
     def get_dataset(self, infile, chosen_samples=None):
@@ -46,6 +49,8 @@ class DatasetHandler():
         self.data = pd.read_feather(infile)
         if chosen_samples:
             self.data = self.data.loc[self.data['sample'].isin(chosen_samples)]
+        if self.config['train_size'] != -1:
+            self.data = self.data[:self.config['train_size']]
         
         
     #Function to calculate the MC weights from input datagframe
@@ -83,12 +88,17 @@ class DatasetHandler():
         #include dropping nans
          
     
-    def scale_variables(self):
+    def scale_variables(self, scalers=None):
         
         self.scalers = {}
-        for col in self.data.columns:
-    
-            scaler = StandardScaler()
+        if scalers:
+            cols = list(scalers.keys())
+            print("Using prefitted scalers.")
+        else:
+            cols = self.data.columns
+            
+        for col in cols:
+            scaler = StandardScaler() if scalers is None else scalers[col]
             if col == 'weight':
                 
                 #Adjust the weights to be centered on 1
@@ -98,7 +108,10 @@ class DatasetHandler():
             if col == 'sample':
                 continue
         
-            self.data.loc[:, col] = scaler.fit_transform(np.array(self.data[col]).reshape(len(self.data[col]),1))
+            if scalers is None:
+                self.data.loc[:, col] = scaler.fit_transform(np.array(self.data[col]).reshape(len(self.data[col]),1))
+            else:
+                self.data.loc[:, col] = scaler.transform(np.array(self.data[col]).reshape(len(self.data[col]),1))
             print(f"Scaled {col} to mean: {self.data[col].mean()}")
             self.scalers[col] = scaler
             

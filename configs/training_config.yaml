@@ -1,5 +1,6 @@
 samples_path : '/data/at3/scratch3/jharrison/nominal_feather/Regions'
 feather_file : 'CR_1Z_0b_2SFOS_newvars.ftr'
+signal_file : 'CR_1Z_0b_2SFOS_VLLs_newvars.ftr'
 
 #Set training variables
 training_variables:     ['met_met',
@@ -27,13 +28,13 @@ training_variables:     ['met_met',
 
 #Set training hyperparameters
 Train : True
-size: -1
+train_size: 10000
 model_type : 'AE'
 batch_size : 1024
 learning_rate : 1e-2
-num_epochs : 1
+num_epochs : 10
 load_path : 'outputs/VAE_1943-16-08-2022/model_state_dict.pt'
-test_dump : False
+test_dump : True
 
 #Preprocessing settings
 remove_zero_weights : True
@@ -74,3 +75,11 @@ chosen_samples: ['singleTop',
  'ttZZ',
  'ttWH',
  'ttHH']
+ 
+#Set the groupings
+groupings:
+   VV:  ['ggVV','VV']
+   VVV: ['VVV']
+   VH : ['VH']
+   Top: ['ttZalt', 'fourTop', 'ttWW','ttH','WtZ']
+   Other: ['singleTop','tW','Zjets','Wjets','Vgamma','ttW2210EW','rareTop','threeTop','tZ','tHjb','ttbarnonallhad','ttZZ','ttWH','ttHH']

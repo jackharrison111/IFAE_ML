@@ -12,6 +12,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class NN(nn.Module):
     
     def __init__(self, dimensions):
@@ -21,15 +22,22 @@ class NN(nn.Module):
         layers = []
         
         for i, dim in enumerate(dimensions):
+            if dim == dimensions[-2]:
+                layers.append(   #Don't add func to output
+                   nn.Sequential(
+                        nn.Linear(dim, dimensions[i+1])
+                    )
+                )
+                break
             layers.append(
                     nn.Sequential(
                         nn.Linear(dim, dimensions[i+1]),
                         getattr(nn, func)()
-                        #nn.ReLU()
                     )
                 )
             
         self.network = nn.Sequential(layers)
+        
         
     def forward(self, data):
         

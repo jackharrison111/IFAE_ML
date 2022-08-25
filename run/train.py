@@ -45,10 +45,17 @@ import torch.nn.functional as F
 
 import os
 import datetime as dt
-from tqdm import tqdm
+from tqdm.auto import tqdm
 from time import perf_counter
+import yaml
 
+#Dataset includes
+from preprocessing.dataset_io import DatasetHandler
+from preprocessing.dataset import data_set
+from torch.utils.data import DataLoader
 
+#Plotting
+from plotting.plot_results import Plotter
 
 class Trainer():
     
@@ -57,8 +64,17 @@ class Trainer():
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.model = model.to(self.device)
         
-        self.reversed_groupings = sample_groupings
-        self.config = config
+        
+        if type(config) == str:
+            with open(config, 'r') as f:
+                self.config = yaml.safe_load(f)
+        else:
+            self.config = config
+        
+        self.reversed_groupings = {}
+        for key, values in self.config['groupings'].items():
+            for val in values:
+                self.reversed_groupings[val] = key
         
         date = dt.datetime.strftime(dt.datetime.now(),"%H%M-%d-%m-%Y")
         self.output_dir = 'outputs/VAE_'+date
@@ -68,6 +84,22 @@ class Trainer():
         
         self.make_optimizer()
         
+        
+    def get_dataset(self, config=None):
+        
+        if not config:
+            config = self.config
+        dh = DatasetHandler(config)
+        data, val = dh.split_per_sample(val=True)
+        
+        train_data = data_set(data)
+        val_data = data_set(val)
+        
+        train_loader = DataLoader(train_data, batch_size=dh.config['batch_size'], shuffle=True)
+        val_loader = DataLoader(val_data, batch_size=1)
+        
+        return train_loader, val_loader
+    
         
     def loss_function(self, recon_x, x, mu, log_var, variational=True):
         #BCE = F.binary_cross_entropy(recon_x, x, reduction='sum')
@@ -88,26 +120,25 @@ class Trainer():
         self.optimizer = optim.SGD(self.model.parameters(), lr=learning_rate)
         
         
-    def train(self, dataloader, val_loader=None):
-        
+    def train_vae(self, dataloader, val_loader=None):
         
         print(f"Using available: {self.device}")
         
         epoch_losses = []
-        validation_losses = []
+        validation_losses = {}
         weight_loss = self.config['weight_loss']
         
         for epoch in range(self.config['num_epochs']):
             epoch_loss = 0
-            for idx, (data, weights, samples, sc_weight) in enumerate(dataloader):
+            for idx, (data, weights, samples, sc_weight) in tqdm(enumerate(dataloader)):
                 
                 self.model.train()
                 data = data.to(self.device)
                 sc_weight = sc_weight.to(self.device)
                 self.optimizer.zero_grad()
                 
-                if idx % 50 == 0:
-                    print(f"Done {round(idx/len(dataloader),2)}%")
+                #if idx % 50 == 0:
+                #    print(f"Done {round(idx/len(dataloader),2)}%")
                 
                 # Feeding a batch into the network to obtain the output image, mu, and logVar
                 out, mu, logVar = self.model(data)
@@ -127,36 +158,38 @@ class Trainer():
                 
                 
             #And then output a validation loss per sample (per group)
-            if val_loader and epoch % self.config['val_frequency'] == 0:
-                
-                val_losses = {}
-                val_counts = {}
-                
-                self.model.eval()
-                for idy, (data, weights, samples, sc_weights) in enumerate(val_loader):
-                    
-                    data = data.to(self.device)
-                    samples=samples[0]
-                    out, mu, logVar = self.model(data)
-                    loss, mse, kld = self.loss_function(out, data, mu, logVar, variational=self.model.variational)
-                    
-                    #Multiply the loss by the weights
-                    loss = torch.dot(self.config['added_weight_factor']*sc_weights, loss) if weight_loss else torch.sum(loss)
-                    #if weight_loss:
-                    #    loss = torch.dot(added_weight_factor*sc_weights, loss)
-                    #else:
-                    #    loss = torch.sum(loss)
+            if val_loader and self.config['val_frequency'] > 0:
+                if epoch % self.config['val_frequency'] == 0:
+    
+                    val_losses = {}
+                    val_counts = {}
 
-                    group = self.reversed_groupings.get(samples,'All')
-                    running_sum = val_losses.get(group,0) + loss.item()
-                    running_counts = val_losses.get(group,0) + 1
-                    val_losses[group] = running_sum
-                    val_counts[group] = running_counts
-                    
-                for key in val_counts.keys():
-                    val_losses[key] = val_losses[key]/val_counts[key]
-                validation_losses.append(val_losses)
-                print('Epoch {}: Validation Loss {}'.format(epoch, val_losses))
+                    self.model.eval()
+                    for idy, (data, weights, samples, sc_weights) in enumerate(val_loader):
+
+                        data = data.to(self.device)
+                        samples=samples[0]
+                        out, mu, logVar = self.model(data)
+                        loss, mse, kld = self.loss_function(out, data, mu, logVar, variational=self.model.variational)
+
+                        #Multiply the loss by the weights
+                        loss = torch.dot(self.config['added_weight_factor']*sc_weights, loss) if weight_loss else torch.sum(loss)
+
+                        group = self.reversed_groupings.get(samples,'All')
+                        running_sum = val_losses.get(group,0) + loss.item()
+                        running_counts = val_losses.get(group,0) + 1
+                        val_losses[group] = running_sum
+                        val_counts[group] = running_counts
+
+                    for key in val_counts.keys():
+                        key_loss = val_losses[key]/val_counts[key]
+                        val_losses[key] = key_loss
+                        loss_store = validation_losses.get(key, [])
+                        loss_store.append(key_loss)
+                        validation_losses[key] = loss_store
+                        
+                    #validation_losses.append(val_losses)
+                    print('Epoch {}: Validation Loss {}'.format(epoch, val_losses))
         
         #TODO:
         # - add early stopping
@@ -165,12 +198,30 @@ class Trainer():
         
         return epoch_losses, validation_losses
     
-    def save_training(self, output_dir):
+    def save_training(self):
         
         #Save the model and optimizer
-        torch.save(self.model.state_dict(), os.path.join(output_dir, 'model_state_dict.pt'))
-        torch.save(self.optimizer.state_dict(), os.path.join(output_dir, 'optimizer_state_dict.pt'))
+        torch.save(self.model.state_dict(), os.path.join(self.output_dir, 'model_state_dict.pt'))
+        torch.save(self.optimizer.state_dict(), os.path.join(self.output_dir, 'optimizer_state_dict.pt'))
                 
+    def run(self):
+        
+        train_loader, val_loader = t.get_dataset()
+        epoch_losses, validation_losses = t.train_vae(train_loader, val_loader)
+        t.save_training()
+        print("Finished training.")
+        
+        p = Plotter()
+        p.plot_scatter([i for i in range(len(epoch_losses))], epoch_losses, xlab='Epoch', ylab='Epoch loss',
+                   save_name=os.path.join(self.output_dir,'Epoch_losses.png'))
+    
+        validation_losses['Train'] = epoch_losses
+        p.plot_scatter_overlay(validation_losses, xlab='Epoch', ylab='Epoch loss',
+                              save_name=os.path.join(self.output_dir,'Epoch_losses_Val.png'),
+                               val_frequency=self.config['val_frequency'])
+        
+        
+        
                 
                 
 if __name__ == '__main__':
@@ -181,39 +232,30 @@ if __name__ == '__main__':
     parser.add_argument("-c", "--config",default="configs/training_config.yaml", help="Choose the master config to use")
     args = parser.parse_args()
     
-    
-    from preprocessing.dataset_io import DatasetHandler
-    
-    dh = DatasetHandler(args.config)
-    
-    data, val = dh.split_per_sample(val=True)
-    #data, test = dh.split_per_sample()
-    #print(len(data), len(val_data), len(test_data))
-    
-    from preprocessing.dataset import data_set
-    train_data = data_set(data)
-    val_data = data_set(val)
-    
-    #test_data = data_set(test)
-    #print(len(test_data))
-    
-    #Make a dataloader
-    from torch.utils.data import DataLoader
-    train_loader = DataLoader(train_data, batch_size=dh.config['batch_size'], shuffle=True)
-    val_loader = DataLoader(val_data, batch_size=1)
-    
-    
+    #Get the model
     from model.autoencoder import VAE, AE
-
-    useful_columns = [col for col in data.columns if col not in ['sample','weight', 'scaled_weight']]
-    enc_dim = [len(useful_columns),4]
-    dec_dim = [4,len(useful_columns)]
-    z_dim = 2
-    model_type = dh.config['model_type']
+    with open(args.config,'r') as f:
+        conf = yaml.safe_load(f)
+    
+    
+    useful_columns = [col for col in conf['training_variables'] if col not in ['sample','weight', 'scaled_weight']]
+    enc_dim = [len(useful_columns),8]
+    dec_dim = [8,len(useful_columns)]
+    z_dim = 4
+    model_type = conf['model_type']
     if model_type == 'AE':
         model = AE(enc_dim, dec_dim, z_dim)
     elif model_type == 'VAE':
         model = VAE(enc_dim, dec_dim, z_dim)
     
-    t = Trainer(model, config=dh.config)
-    t.train(train_loader, val_loader)
+    
+    #Train
+    t = Trainer(model, config=args.config)
+    t.run()
+    
+    
+
+    
+
+    
+     
