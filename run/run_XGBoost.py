@@ -6,9 +6,10 @@ from time import perf_counter
 import numpy as np
 
 if __name__ == '__main__':
-
     
-    dh = DatasetHandler('configs/training_config.yaml')
+    out_dir = 'XGBoost/Esinglet300_2'
+    
+    dh = DatasetHandler('configs/XGBoost_config.yaml')
     
     sig_dh = DatasetHandler('configs/VLL_signal_config.yaml', scalers=dh.scalers)
     size=-1
@@ -21,9 +22,9 @@ if __name__ == '__main__':
     sig_lowMass = sig_data.loc[sig_data['sample']=='Esinglet300']
     print(bkg_data.head())
     dh.data = pd.concat([bkg_data,sig_lowMass])
-    train_lowMass, test_lowMass = dh.split_per_sample()
+    train, test = dh.split_per_sample()
     
-    df.data = pd.concat([bkg_data,sig_highMass])
+    #df.data = pd.concat([bkg_data,sig_highMass])
     
     train_y = train['label']
     test_y = test['label']
@@ -55,15 +56,15 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     num_bins=25
     bins = np.linspace(0,1,num_bins)
-    bkg_vals, bkg_bins, _ = plt.hist(bkg_pred, label='0',bins=bins, density=True,histtype='step')
-    vals, bins, _ = plt.hist(sig_pred, label='1', bins=bins, density=True,histtype='step')
+    bkg_vals, bkg_bins, _ = plt.hist(bkg_pred, label='Bkg',bins=bins, density=True,alpha=0.5)
+    vals, bins, _ = plt.hist(sig_pred, label='Sig', bins=bins, density=True,alpha=0.5)
     vals = vals/sum(vals)
     bkg_vals = bkg_vals/sum(bkg_vals)
-    plt.xlabel('Score')
+    plt.xlabel('XGBoost Score')
     plt.ylabel('Counts')
     plt.legend()
-    plt.savefig(f'outputs/XGBoost/test_hist{size}_2.png')
-    
+    plt.savefig(f'outputs/{out_dir}/test_hist{size}_2.png')
+    plt.close()
   
     def get_chi2distance(x,y):
         ch2 = np.nan_to_num(((x-y)**2)/(x+y), copy=True, nan=0.0, posinf=None, neginf=None)
@@ -71,6 +72,8 @@ if __name__ == '__main__':
         return ch2
 
     chi2 = get_chi2distance(vals, bkg_vals)
+    with open(f'outputs/{out_dir}/chi2.txt', 'w') as f:
+        f.writelines([f"Chi2 value: {chi2}"])
     print(f"Chi2 value: {chi2}")
     
     

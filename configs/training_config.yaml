@@ -2,9 +2,16 @@ samples_path : '/data/at3/scratch3/jharrison/nominal_feather/Regions'
 feather_file : 'CR_1Z_0b_2SFOS_newvars.ftr'
 signal_file : 'CR_1Z_0b_2SFOS_VLLs_newvars.ftr'
 
+#Ntuple output settings
+add_to_ntuple: True
+base_dir: '/data/at3/scratch3/jharrison/nominal/'
+out_dir: '/data/at3/scratch3/jharrison/mod_ntuples_newvars/'
+
+vll_base_dir: '/data/at3/scratch3/jharrison/VLL'
+vll_out_dir: '/data/at3/scratch3/jharrison/mod_VLL'
+
 #Set training variables
 training_variables:     ['met_met',
-#    'met_phi',
     'Mllll0123',
     'HT_lep',
     'HT_jets',
@@ -12,6 +19,7 @@ training_variables:     ['met_met',
 #    'sumPsbtag',
     'weight',
     'sample',
+    'eventNumber',
 #    'Mll01',
 #    'Mll02',
 #    'Mll03',
@@ -28,13 +36,15 @@ training_variables:     ['met_met',
 
 #Set training hyperparameters
 Train : True
-train_size: 10000
-model_type : 'AE'
+train_size: -1
+model_type : 'VAE'
 batch_size : 1024
-learning_rate : 1e-2
-num_epochs : 10
+learning_rate : 0.00005
+num_epochs : 40
 load_path : 'outputs/VAE_1943-16-08-2022/model_state_dict.pt'
-test_dump : True
+test_dump : False
+use_eventnumber: True
+even_or_odd : 'Even'
 
 #Preprocessing settings
 remove_zero_weights : True
@@ -44,7 +54,7 @@ added_weight_factor : 500
 
 #Test settings
 validation_groups : ['VV', 'Top', 'VH', 'VVV']
-validation_fraction : 0.1
+validation_fraction : 0.2
 test_fraction : 0.2
 val_frequency : 2
 num_test_samples : -1
@@ -52,7 +62,7 @@ evaluate_signals : True
 
 
 #Set chosen samples
-chosen_samples: ['singleTop',
+chosen_samples: ['singleTopschan',
  'tW',
  'Zjets',
  'Wjets',
@@ -69,7 +79,7 @@ chosen_samples: ['singleTop',
  'tZ',
  'WtZ',
  'VVV',
- 'VH',
+ 'VHalt',
  'tHjb',
  'ttbarnonallhad',
  'ttZZ',
@@ -80,6 +90,6 @@ chosen_samples: ['singleTop',
 groupings:
    VV:  ['ggVV','VV']
    VVV: ['VVV']
-   VH : ['VH']
+   VH : ['VHalt']
    Top: ['ttZalt', 'fourTop', 'ttWW','ttH','WtZ']
-   Other: ['singleTop','tW','Zjets','Wjets','Vgamma','ttW2210EW','rareTop','threeTop','tZ','tHjb','ttbarnonallhad','ttZZ','ttWH','ttHH']
+   Other: ['singleTopschan','tW','Zjets','Wjets','Vgamma','ttW2210EW','rareTop','threeTop','tZ','tHjb','ttbarnonallhad','ttZZ','ttWH','ttHH']

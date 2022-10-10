@@ -115,6 +115,12 @@ class AE(nn.Module):
         self.encoder = Encoder(enc_dim, latent_dim)
         self.decoder = Decoder(dec_dim, latent_dim)
         
+    def loss_function(self, recon_x, x, mu, log_var):
+        #BCE = F.binary_cross_entropy(recon_x, x, reduction='sum')
+        MSE = F.mse_loss(x, recon_x, reduction='none')   #Works it out element-wise
+        MSE = torch.mean(MSE, dim=1)   #Average across features, leaving per-example MSE
+        return MSE, None, None
+        
     def forward(self, data):
         z,_ = self.encoder(data)
         prediction = self.decoder(z)
@@ -133,6 +139,15 @@ class VAE(nn.Module):
         self.decoder = Decoder(dec_dimensions, latent_dim)
         self.latent_dim = latent_dim
         
+    def loss_function(self, recon_x, x, mu, log_var):
+        
+        #BCE = F.binary_cross_entropy(recon_x, x, reduction='sum')
+        MSE = F.mse_loss(x, recon_x, reduction='none')   #Works it out element-wise
+        MSE = torch.mean(MSE, dim=1)   #Average across features, leaving per-example MSE
+        KLD = 1 + log_var - mu.pow(2) - log_var.exp()   #Again worked out element-wise
+        KLD = -0.5 * torch.sum(KLD, dim=1)   #Sum across features, leaving per-example KLD
+        return MSE + KLD, MSE, KLD
+    
         
     def forward(self, data):
         

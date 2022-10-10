@@ -1,6 +1,12 @@
 samples_path : '/data/at3/scratch3/jharrison/nominal_feather/Regions'
 feather_file : 'CR_1Z_0b_2SFOS_VLLs_newvars.ftr'
 
+
+#Ntuple output settings
+add_to_ntuple: True
+base_dir: '/data/at3/scratch3/jharrison/VLL'
+out_dir: '/data/at3/scratch3/jharrison/mod_VLL_newvars/'
+
 #Set training variables
 training_variables:     ['met_met',
 #    'met_phi',
@@ -27,6 +33,7 @@ training_variables:     ['met_met',
 
 #Set training hyperparameters
 Train : True
+train_size : -1
 size: -1
 model_type : 'AE'
 batch_size : 1024
@@ -51,4 +58,4 @@ evaluate_signals : True
 
 
 #Set chosen samples
-#chosen_samples:
+#chosen_samples: ['Mdoublet700']

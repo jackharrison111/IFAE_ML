@@ -17,6 +17,49 @@ class VariableMaker():
         ...
         
         
+    def find_Z_pairs(self, df):
+        pairings=  {
+                'Mll01' : 'Mll23', 
+                'Mll02':'Mll13',
+                'Mll03':'Mll12',
+                'Mll12':'Mll03',
+                'Mll13':'Mll02',
+                'Mll23':'Mll01'
+                 }
+        cols = ['Mll01','Mll02','Mll03','Mll12','Mll13','Mll23']
+        cols+=['lep_ID_0','lep_ID_1','lep_ID_2','lep_ID_3']
+
+        
+        cols+= ['best_Zllpair','other_Zllpair','best_mZll','other_mZll']
+        
+        mll_columns = list(pairings.keys())
+        for i in range(len(df)):
+            best_pair = None
+            best_mass = None
+            for col in mll_columns:
+                if abs(df.loc[i,col]-91.2e3)<10e3 and abs(df.loc[i, pairings[col]]-91.2e3)>10e3:
+                    if best_pair is None:
+                        best_pair = col
+                        best_mass = df.loc[i,col]
+                    else:
+                        if abs(df.loc[i,col]-91.2e3) < abs(best_mass-91.2e3):
+                            best_pair = col
+                            best_mass = df.loc[i,col]
+
+            df.loc[i, 'best_Zllpair'] = best_pair
+            df.loc[i, 'best_mZll'] = best_mass
+            df.loc[i, 'other_Zllpair'] = pairings.get(best_pair,None)
+            if best_pair is None:
+                df.loc[i, 'other_mZll'] = None
+            else:
+                df.loc[i, 'other_mZll'] = df.loc[i, pairings[best_pair]]
+
+        print(f"Found {len(df.loc[df['other_mZll'].isna()])} events that don't match a 1Z event. Dropping them!")
+        df.dropna(subset=['best_Zllpair','best_mZll','other_Zllpair','other_mZll'], inplace=True)
+        
+        return df
+        
+        
     def find_bestZll_pair(self, df):
         
         pairings=  {
@@ -48,11 +91,10 @@ class VariableMaker():
                     'other_Zllpair': 'other_ptZll'}
         
         for pair_choice, output_col in best_worst.items():
-            print(df.loc[0,pair_choice])
             df['l0'] = df[pair_choice].str[-2]
             df['l1'] = df[pair_choice].str[-1]
 
-            for i, (id0,id1) in tqdm(enumerate(zip(df['l0'],df['l1']))):
+            for i, (id0,id1) in enumerate(zip(df['l0'],df['l1'])):
 
                 lv0 = ROOT.TLorentzVector()
                 lv0.SetPtEtaPhiE(df.loc[i,f"lep_Pt_{id0}"],df.loc[i,f"lep_Eta_{id0}"],
@@ -73,7 +115,7 @@ class VariableMaker():
         df['l1'] = df['best_Zllpair'].str[-1]
 
 
-        for i, (id0,id1) in tqdm(enumerate(zip(df['l0'],df['l1']))):
+        for i, (id0,id1) in enumerate(zip(df['l0'],df['l1'])):
 
             lv0 = ROOT.TLorentzVector()
             lv0.SetPtEtaPhiE(df.loc[i,f"lep_Pt_{id0}"],df.loc[i,f"lep_Eta_{id0}"],

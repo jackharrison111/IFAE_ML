@@ -36,12 +36,18 @@ class NN(nn.Module):
                     )
                 )
             
-        self.network = nn.Sequential(layers)
+        self.network = nn.Sequential(*layers)
+        
+    def loss_function(self, input_x, target_x, w=None):
+        
+        loss = F.binary_cross_entropy(input_x, target_x, weight=w)*500
+        output_dict = {'loss': loss}
+        return output_dict
         
         
     def forward(self, data):
         
-        result = nn.F.sigmoid(self.network(data))
+        result = torch.sigmoid(self.network(data))
         return result
 
     

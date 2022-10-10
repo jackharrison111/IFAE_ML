@@ -3,6 +3,7 @@ import uproot
 import yaml
 import json
 import pandas as pd
+import numpy as np
 from time import perf_counter
 
 '''
@@ -20,12 +21,10 @@ export PYTHONPATH=/nfs/pic.es/user/j/jharriso/IFAE_ML
 
 class FeatherMaker():
     
-    def __init__(self, master_config='uproot/feather_config.yaml'):
+    def __init__(self, master_config='feather/feather_config.yaml'):
         
         with open(master_config, 'r') as file:
             self.master_config = yaml.safe_load(file)
-        
-        ...
 
     def get_features(self):
 
@@ -76,7 +75,7 @@ class FeatherMaker():
         with open(output_json,'w') as f:
             json.dump(samples_dict, f)
             
-    def make_sample_file_map(self):
+    def make_sample_file_map(self, all_files):
         
         #Read the mapping of sample : DSIDs
         with open(self.master_config['json_output'], 'r') as f:
@@ -110,7 +109,12 @@ class FeatherMaker():
             
             #Use uproot to chain all the files together - has the potential for failing:
             #https://uproot.readthedocs.io/en/latest/basic.html#reading-many-files-into-big-arrays
-            array = uproot.concatenate(nominals, variables, cut=cut_expr, library='pd', allow_missing=True)
+            #TODO: Try and improve this, as it's slow!
+            #array = uproot.concatenate(nominals, variables, cut=cut_expr, library='pd', allow_missing=True)
+            
+            array = uproot.concatenate(nominals, variables, cut=cut_expr, library='np', allow_missing=True)
+            array = pd.DataFrame(array, columns=variables)
+            
             if type(array) == list or len(array) == 0:
                 print(sample, array)
                 continue
@@ -130,6 +134,7 @@ class FeatherMaker():
                 
             output_data = pd.concat([output_data, array])
             
+            
         output_data.reset_index(inplace=True)
         save_name = os.path.join(self.master_config['feather_path'],
                             f"Regions/{self.master_config['region_name']}.ftr")
@@ -141,27 +146,16 @@ class FeatherMaker():
 
 if __name__ == '__main__':
     
-    '''
-    #Set the config inputs
-    variables_file = 'configs/VLL_variables.txt'
-    samples_file = 'configs/VLL_samples.txt'
-    json_output = 'configs/VLL_samples.json'
-    feather_path = "/data/at3/scratch3/jharrison/nominal_feather"
-    nominal_path = "/data/at3/scratch3/jharrison/VLL/"
-    region_name = 'CR_1Z_0b_2SFOS_VLLs'
-    '''
+    
     s = perf_counter()
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--config",default="feather/feather_config.yaml", help="Choose the master config to use")
     args = parser.parse_args()
+    
+    
     print(f"Starting up!\nMaking feather file using config: {args.config}")
     fm = FeatherMaker(master_config=args.config)
-    
-    #Add this to reading from a file?
-    cut_choice = '(total_charge==0) & (nTaus_OR==0) & (nJets_OR_DL1r_77==0)  & (lep_Pt_0*1e-3>25) & (lep_Pt_1*1e-3>25) & (lep_Pt_2*1e-3>25) & (lep_Pt_3*1e-3>25) & (lep_isolationFCLoose_0) & (lep_isolationFCLoose_1) & (lep_isolationFCLoose_2) & (lep_isolationFCLoose_3) & ((lep_ID_0==-lep_ID_1)&(abs(Mll01-91.2e3)<10e3)&((lep_ID_2!=lep_ID_3) | (abs(Mll23-91.2e3)>10e3)) | (lep_ID_0==-lep_ID_2)&(abs(Mll02-91.2e3)<10e3)&((lep_ID_1!=lep_ID_3) | (abs(Mll13-91.2e3)>10e3)) |(lep_ID_0==-lep_ID_3)&(abs(Mll03-91.2e3)<10e3)&((lep_ID_1!=lep_ID_2) | (abs(Mll12-91.2e3)>10e3)) |(lep_ID_1==-lep_ID_2)&(abs(Mll12-91.2e3)<10e3)&((lep_ID_0!=lep_ID_3) | (abs(Mll03-91.2e3)>10e3)) |(lep_ID_1==-lep_ID_3)&(abs(Mll13-91.2e3)<10e3)&((lep_ID_0!=lep_ID_2) | (abs(Mll02-91.2e3)>10e3)) |(lep_ID_2==-lep_ID_3)&(abs(Mll23-91.2e3)<10e3)&((lep_ID_0!=lep_ID_1) | (abs(Mll01-91.2e3)>10e3))) & ( (((lep_ID_0==-lep_ID_1)&(lep_ID_2==-lep_ID_3))) | (((lep_ID_0==-lep_ID_2)&(lep_ID_1==-lep_ID_3))) | (((lep_ID_0==-lep_ID_3)&(lep_ID_1==-lep_ID_2))) )'
-    
-    
     
     #Get the required variables from tree
     variables = fm.get_features()
@@ -173,59 +167,19 @@ if __name__ == '__main__':
     
     #Get all the files needed
     all_files = fm.find_root_files(fm.master_config['nominal_path'], directory='')
-    sample_file_paths = fm.make_sample_file_map()
+    sample_file_paths = fm.make_sample_file_map(all_files)
     
     
+    #Get user-defined functions to run over dataframe (output is saved to feather)
     from preprocessing.create_variables import VariableMaker
     vm = VariableMaker()
-    funcs = [vm.find_bestZll_pair, vm.calc_4lep_mZll, vm.calc_4lep_pTll, vm.calc_m3l]
+    #TODO: Make this into a config input
+    #funcs = [vm.find_bestZll_pair, vm.calc_4lep_mZll, vm.calc_4lep_pTll, vm.calc_m3l]
+    funcs = [vm.find_Z_pairs, vm.calc_4lep_pTll, vm.calc_m3l]
+    
+    #Make the feather file
     fm.make_output_feather(sample_file_paths, variables, funcs)
-    
     f = perf_counter()
-    print(f"Finised running! \n Time taken: {round(f-s,2)}s.")
-    
-    
-    '''
-    #Read the mapping of sample : DSIDs
-    import json
-    with open(fm.master_config['json_output'], 'r') as f:
-        sample_map = json.load(f)
-        
-    #Transform from sample : DSIDs to sample : file_path
-    sample_file_paths = {}
-    for sample, files in sample_map.items():
-        file_paths = []
-        for file in files:
-            for fp in all_files:
-                if file in fp:
-                    file_paths.append(fp)
-        
-        sample_file_paths[sample] = file_paths
-    print(sample_file_paths)
-    '''
-    
-    '''
-    #Loop over all the samples and read using uproot
-    for sample, files in sample_file_paths.items():
-        if len(files) == 0:
-            print(sample, 0)
-            continue
-        nominals = [f+':nominal' for f in files]
-        
-        #Use uproot to chain all the files together - has the potential for failing:
-        #https://uproot.readthedocs.io/en/latest/basic.html#reading-many-files-into-big-arrays
-        array = uproot.concatenate(nominals, variables, cut=cut_choice, library='pd', allow_missing=False)
-        if type(array) == list:
-            print(sample, array)
-            continue
-            
-        #Add a sample name to the feather file
-        name = sample.split('_')[1]
-        array['sample'] = name
-        print(sample, name, len(array))
-        output_data = pd.concat([output_data, array])
+    print(f"Finished running! \n Time taken: {round(f-s,2)}s.")
    
-    output_data.reset_index(inplace=True)
-    output_data.to_feather(os.path.join(feather_path, f"Regions/{region_name}.ftr"))
-    '''
     

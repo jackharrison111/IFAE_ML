@@ -35,7 +35,7 @@ class DatasetHandler():
         else:
             self.config = dataset_config
             
-        data_path = os.path.join(self.config['samples_path'],self.config['feather_file'])
+        data_path = os.path.join(self.config['samples_path'], self.config['feather_file'])
         
         self.get_dataset(data_path, chosen_samples=self.config.get('chosen_samples',None))
         self.calculate_mcweight()
@@ -49,6 +49,7 @@ class DatasetHandler():
         self.data = pd.read_feather(infile)
         if chosen_samples:
             self.data = self.data.loc[self.data['sample'].isin(chosen_samples)]
+            print(f"Only using samples: {chosen_samples}")
         if self.config['train_size'] != -1:
             self.data = self.data[:self.config['train_size']]
         
@@ -93,21 +94,22 @@ class DatasetHandler():
         self.scalers = {}
         if scalers:
             cols = list(scalers.keys())
+            cols += ['weight']
             print("Using prefitted scalers.")
         else:
             cols = self.data.columns
             
         for col in cols:
-            scaler = StandardScaler() if scalers is None else scalers[col]
+            
             if col == 'weight':
-                
-                #Adjust the weights to be centered on 1
+                #Adjust the weights to be centered on 1 #normalise
                 self.data.loc[:,'scaled_weight'] = self.data.loc[:,col]/self.data[col].sum()
                 continue
-        
-            if col == 'sample':
+
+            if col in ['sample','eventNumber']:
                 continue
-        
+                
+            scaler = StandardScaler() if scalers is None else scalers[col]
             if scalers is None:
                 self.data.loc[:, col] = scaler.fit_transform(np.array(self.data[col]).reshape(len(self.data[col]),1))
             else:
@@ -127,7 +129,20 @@ class DatasetHandler():
             pickle.dump(sc, open(os.path.join(scaler_folder,col+'_scaler.pkl'),'wb'))
             
             
-    def split_per_sample(self, val=False):
+    def split_per_sample(self, val=False, use_eventnumber=False):
+        
+        if use_eventnumber:
+            print("Splitting dataset by event number.")
+            if self.config['even_or_odd'] == 'Even':
+                print("Using even.")
+                train = self.data.loc[self.data['eventNumber'] % 2 == 0]
+                test = self.data.loc[self.data['eventNumber'] % 2 == 1]
+            else:
+                print("Using odd.")
+                train = self.data.loc[self.data['eventNumber'] % 2 == 1]
+                test = self.data.loc[self.data['eventNumber'] % 2 == 0]
+            print(f"Train size: {len(train)}, Test size: {len(test)}")
+            return train, test
         
         self.test_data = pd.DataFrame()
         print("Length of dataset: ", len(self.data))
@@ -141,7 +156,14 @@ class DatasetHandler():
             sample_data = self.data.loc[self.data['sample'] == sample]
             if len(sample_data) == 0:
                 continue
-            if len(sample_data) * fraction < 1:
+           
+            if len(sample_data ) * fraction < 1:
+                continue
+           
+            if len(sample_data) == 1:
+                self.test_data = pd.concat([self.test_data, sample_data])
+                self.data.drop(index=sample_data.index.values, axis=0, inplace=True)
+                print(f"Found sample: {sample} with 1 example.")
                 continue
                 
             train, test = train_test_split(sample_data, test_size=fraction)
@@ -151,7 +173,7 @@ class DatasetHandler():
             
             #TODO:
             # - add this into verbose mode
-            #print(f"Split {sample} by removing {len(test)} events.")
+            print(f"Split {sample} by removing {len(test)} events.")
         
-        print(f"Removed: {len(self.test_data)}, Remaining length: {len(self.data)}")
+        print(f"Total removed: {len(self.test_data)}, Remaining length: {len(self.data)}")
         return self.data, self.test_data
