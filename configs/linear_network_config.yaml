@@ -1,0 +1,86 @@
+samples_path : '/data/at3/scratch3/jharrison/nominal_feather/Regions'
+feather_file : 'CR_1Z_0b_2SFOS_newvars.ftr'
+signal_file : 'CR_1Z_0b_2SFOS_VLLs_newvars.ftr'
+
+#Set training variables
+training_variables:     ['met_met',
+#    'met_phi',
+    'Mllll0123',
+    'HT_lep',
+    'HT_jets',
+    'nJets_OR',
+#    'sumPsbtag',
+    'weight',
+    'sample',
+#    'Mll01',
+#    'Mll02',
+#    'Mll03',
+#    'Mll12',
+#    'Mll13',
+#    'Mll23',
+    'best_mZll',
+    'other_mZll',
+    'M3l_high',
+    'M3l_low',
+    'best_ptZll',
+    'other_ptZll'
+]
+
+#Set training hyperparameters
+Train : True
+train_size: -1
+model_type : 'VAE'
+batch_size : 1024
+learning_rate : 1
+num_epochs : 30
+load_path : 'outputs/VAE_1943-16-08-2022/model_state_dict.pt'
+test_dump : True
+use_eventnumber: False
+
+#Preprocessing settings
+remove_zero_weights : True
+remove_negative_weights : True
+weight_loss : True
+added_weight_factor : 500
+
+#Test settings
+validation_groups : ['VV', 'Top', 'VH', 'VVV']
+validation_fraction : 0.1
+test_fraction : 0.2
+val_frequency : 2
+num_test_samples : -1
+evaluate_signals : True
+
+
+#Set chosen samples
+chosen_samples: ['singleTop',
+ 'tW',
+ 'Zjets',
+ 'Wjets',
+ 'Vgamma',
+ 'ttW2210EW',
+ 'ttH',
+ 'ttZalt',
+ 'rareTop',
+ 'VV',
+ 'ggVV',
+ 'threeTop',
+ 'fourTop',
+ 'ttWW',
+ 'tZ',
+ 'WtZ',
+ 'VVV',
+ 'VH',
+ 'tHjb',
+ 'ttbarnonallhad',
+ 'ttZZ',
+ 'ttWH',
+ 'ttHH']
+ 
+#Set the groupings
+groupings:
+   VV:  ['ggVV','VV']
+   VVV: ['VVV']
+   VH : ['VH']
+   Top: ['ttZalt', 'fourTop', 'ttWW','ttH','WtZ']
+   Other: ['singleTop','tW','Zjets','Wjets','Vgamma','ttW2210EW','rareTop','threeTop','tZ','tHjb','ttbarnonallhad','ttZZ','ttWH','ttHH']

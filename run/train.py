@@ -87,7 +87,7 @@ class Trainer():
                 self.reversed_groupings[val] = key
         
         date = dt.datetime.strftime(dt.datetime.now(),"%H%M-%d-%m-%Y")
-        self.output_dir = 'outputs/FINAL_VAE_'+date
+        self.output_dir = 'outputs/Oct/RetrainingVAE_'+date
         if self.config['test_dump']:
             print("Outputting to test_dump.")
             self.output_dir = 'outputs/test_dump'
@@ -163,6 +163,8 @@ class Trainer():
                 # Backpropagation based on the loss
                 loss.backward()
                 self.optimizer.step()
+                
+                #TODO - sort the validation plots
                 
                 epoch_loss += loss.item()
             epoch_loss = epoch_loss / len(dataloader)
