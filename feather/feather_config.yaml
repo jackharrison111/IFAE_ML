@@ -8,23 +8,24 @@
 #nominal_path : "/data/at3/scratch3/jharrison/nominal"
 
 #Data configs:
-#variables_file : 'configs/Data_variables.txt'
-#samples_file : 'configs/Data_samples.txt'
-#json_output : 'configs/Data_samples.json'
-#feather_path : "/data/at3/scratch3/jharrison/nominal_feather"
+variables_file : 'configs/Data_variables.txt'
+samples_file : 'configs/Data_samples.txt'
+json_output : 'configs/Data_samples.json'
+feather_path : "/data/at3/scratch3/jharrison/nominal_feather/Regions/CR_1Z_0b_2SFOS"
 #nominal_path : "/data/at3/scratch3/jharrison/nominal/data"
+nominal_path : "/data/at3/scratch3/multilepton/newvars/data"
 
 #VLL configs:
-variables_file: 'configs/VLL_variables.txt'
-samples_file : 'configs/VLL_samples.txt'
-json_output : 'configs/VLL_samples.json'
-feather_path : "/data/at3/scratch3/jharrison/nominal_feather"
-nominal_path : "/data/at3/scratch3/jharrison/VLL/"
+#variables_file: 'configs/VLL_variables.txt'
+#samples_file : 'configs/VLL_samples.txt'
+#json_output : 'configs/VLL_samples.json'
+#feather_path : "/data/at3/scratch3/jharrison/nominal_feather"
+#nominal_path : "/data/at3/scratch3/jharrison/VLL/"
 #region_name : 'CR_0Z_0b_2SFOS_VLLs_newvars'
 #region_name : 'test_region'
 
-region_name : 'CR_1Z_0b_2SFOS_VLLs_NewPairings'
-cut_choice : 'cut_1Z_0b_2SFOS_remade'
+region_name : 'CR_1Z_0b_2SFOS_data_newvars_oldString'
+cut_choice : 'cut_1Z_0b_2SFOS'
 
 
 #Cut expressions:

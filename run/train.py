@@ -112,7 +112,7 @@ class Trainer():
         return train_loader, val_loader
     
         
-    def loss_function(self, recon_x, x, mu, log_var, variational=True):
+    def loss_function(self, recon_x, x, mu, log_var, variational=True, beta=None):
         #BCE = F.binary_cross_entropy(recon_x, x, reduction='sum')
         MSE = F.mse_loss(x, recon_x, reduction='none')   #Works it out element-wise
         MSE = torch.mean(MSE, dim=1)   #Average across features, leaving per-example MSE
@@ -120,7 +120,10 @@ class Trainer():
         if variational:
             KLD = 1 + log_var - mu.pow(2) - log_var.exp()   #Again worked out element-wise
             KLD = -0.5 * torch.sum(KLD, dim=1)   #Sum across features, leaving per-example KLD
-            return MSE + KLD, MSE, KLD
+            if beta is not None:
+                return (1/beta)*MSE + beta*KLD, MSE, KLD
+            else:
+                return MSE + KLD, MSE, KLD
         else:
             return MSE, None, None
         
@@ -135,13 +138,16 @@ class Trainer():
         
         print(f"Using available: {self.device}")
         
-        epoch_losses = []
+        epoch_losses, epoch_mses, epoch_klds = [], [], []
         validation_losses = {}
+        
         weight_loss = self.config['weight_loss']
         s = perf_counter()
         for epoch in range(self.config['num_epochs']):
             l1 = perf_counter()
             epoch_loss = 0
+            epoch_kld = 0
+            epoch_mse = 0
             for idx, data_dict in enumerate(dataloader):
             #for idx, (data, weights, samples, sc_weight) in enumerate(dataloader):
                 
@@ -155,10 +161,12 @@ class Trainer():
                 
                 # Feeding a batch into the network to obtain the output image, mu, and logVar
                 out, mu, logVar = self.model(data)
-                loss, mse, kld = self.loss_function(out, data, mu, logVar, variational=self.model.variational)
-                
+                loss, mse, kld = self.loss_function(out, data, mu, logVar, variational=self.model.variational, beta=self.config["beta"])
+                num_examples = loss.shape[0]
                 #Multiply the loss by the weights
-                loss = torch.dot(self.config['added_weight_factor']*sc_weight, loss) if weight_loss else torch.sum(loss)
+                loss = torch.dot(self.config['added_weight_factor']*sc_weight, loss)/num_examples if weight_loss else torch.sum(loss)/num_examples
+                mse = torch.dot(self.config['added_weight_factor']*sc_weight, mse)/num_examples if weight_loss else torch.sum(mse)/num_examples
+                kld = torch.dot(self.config['added_weight_factor']*sc_weight, kld)/num_examples if weight_loss else torch.sum(kld)/num_examples
                 
                 # Backpropagation based on the loss
                 loss.backward()
@@ -167,10 +175,16 @@ class Trainer():
                 #TODO - sort the validation plots
                 
                 epoch_loss += loss.item()
-            epoch_loss = epoch_loss / len(dataloader)
-            epoch_losses.append(epoch_loss)
-            print(f"Epoch: {epoch}, Loss: {epoch_loss}")
+                epoch_mse += mse.item()
+                epoch_kld += kld.item()
                 
+            #epoch_loss = epoch_loss / len(dataloader)
+            #epoch_mse /= len(dataloader)
+            #epoch_kld /= len(dataloader)
+            epoch_losses.append(epoch_loss)
+            epoch_mses.append(epoch_mse)
+            epoch_klds.append(epoch_kld)
+            print(f"Epoch: {epoch}, Loss: {epoch_loss}, MSE: {epoch_mse}, KLD: {epoch_kld}")
                 
             #And then output a validation loss per sample (per group)
             if val_loader and self.config['val_frequency'] > 0:
@@ -192,10 +206,13 @@ class Trainer():
                         data = data.to(self.device)
                         samples=samples[0]
                         out, mu, logVar = self.model(data)
-                        loss, mse, kld = self.loss_function(out, data, mu, logVar, variational=self.model.variational)
-
+                        loss, mse, kld = self.loss_function(out, data, mu, logVar, 
+                                                            variational=self.model.variational, beta=self.config["beta"])
+        
                         #Multiply the loss by the weights
                         loss = torch.dot(self.config['added_weight_factor']*sc_weights, loss) if weight_loss else torch.sum(loss)
+                        mse = torch.dot(self.config['added_weight_factor']*sc_weights, mse) if weight_loss else torch.sum(mse)
+                        kld = torch.dot(self.config['added_weight_factor']*sc_weights, kld) if weight_loss else torch.sum(kld)
 
                         group = self.reversed_groupings.get(samples,'All')
                         running_sum = val_losses.get(group,0) + loss.item()
@@ -210,7 +227,6 @@ class Trainer():
                         loss_store.append(key_loss)
                         validation_losses[key] = loss_store
                         
-                    #validation_losses.append(val_losses)
                     print('Epoch {}: Validation Loss {}'.format(epoch, val_losses))
             l2 = perf_counter()
             print(f"Finished epoch... time taken: {round(l2-l1,2)}s.")
@@ -222,8 +238,14 @@ class Trainer():
             
         self.save_training()
         
-        self.p.plot_scatter([i for i in range(len(epoch_losses))], epoch_losses, xlab='Epoch', ylab='Epoch loss',
+        epoch_axis = [i for i in range(len(epoch_losses))]
+        self.p.plot_scatter(epoch_axis, epoch_losses, xlab='Epoch', ylab='Epoch loss',
                    save_name=os.path.join(self.output_dir,'Epoch_losses.png'))
+        
+        loss_parts = {'mse' : epoch_mses, 'kld' : epoch_klds, 'Total' : epoch_losses}
+        self.p.plot_scatter_overlay(loss_parts, xlab='Epoch', ylab='Epoch loss',
+                              save_name=os.path.join(self.output_dir,'Epoch_losses_Separated.png'),
+                               val_frequency=1)
     
         validation_losses['Train'] = epoch_losses
         self.p.plot_scatter_overlay(validation_losses, xlab='Epoch', ylab='Epoch loss',
@@ -290,7 +312,7 @@ if __name__ == '__main__':
         conf = yaml.safe_load(f)
     
     
-    useful_columns = [col for col in conf['training_variables'] if col not in ['sample','weight', 'scaled_weight']]
+    useful_columns = [col for col in conf['training_variables'] if col not in ['sample','weight', 'scaled_weight','eventNumber']]
     enc_dim = [len(useful_columns),8]
     dec_dim = [8,len(useful_columns)]
     z_dim = 4

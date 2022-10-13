@@ -2,10 +2,13 @@ samples_path : '/data/at3/scratch3/jharrison/nominal_feather/Regions'
 feather_file : 'CR_1Z_0b_2SFOS_data_newvars.ftr'
 signal_file : 'CR_1Z_0b_2SFOS_data_newvars.ftr'
 
+#"/data/at3/scratch3/multilepton/newvars"
+
 #Ntuple output settings
 add_to_ntuple: True
-base_dir: '/data/at3/scratch3/jharrison/nominal/data'
-out_dir: '/data/at3/scratch3/jharrison/mod_ntuples_newvars/data'
+#base_dir: '/data/at3/scratch3/jharrison/nominal/data'
+base_dir: '/data/at3/scratch3/multilepton/newvars/data'
+out_dir: '/data/at3/scratch3/jharrison/mod_ntuples_newvars/data_newvars'
 
 vll_base_dir: '/data/at3/scratch3/jharrison/VLL'
 vll_out_dir: '/data/at3/scratch3/jharrison/mod_VLL'

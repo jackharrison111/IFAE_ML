@@ -36,6 +36,11 @@ if __name__ == '__main__':
     
     from model.model_getter import get_model
     
+    feather_conf = "feather/feather_config.yaml"
+    with open(feather_conf, 'r') as f:
+        feather_config = yaml.safe_load(f)
+    cut_expr = feather_config[feather_config['cut_choice']]
+    
     train_conf="configs/training_config.yaml"
     #VLL conf
     conf = "configs/VLL_signal_config.yaml"
@@ -77,7 +82,7 @@ if __name__ == '__main__':
         
         print(f"Running file {file}. {i} / {len(all_root_files)}")
         
-        save_path = file.split('nominal/data/')[1]
+        save_path = file.split('newvars/data/')[1]
         outfile = os.path.join(config['out_dir'],save_path)
         if not os.path.exists(os.path.split(outfile)[0]):
             os.makedirs(os.path.split(outfile)[0])
@@ -86,6 +91,8 @@ if __name__ == '__main__':
         dsid = os.path.split(save_path)[1]
        
     
+        #Instead of opening the whole file, find a way to chunk it and update the ntuples? 
+        
         with uproot.open(file + ':nominal') as evts:
                  
             if len(evts) == 0:
@@ -93,8 +100,8 @@ if __name__ == '__main__':
                     ...
                 continue
                 
-            all_data = evts.arrays(library='pd')
-            
+            all_data = evts.arrays(cut=cut_expr, library='pd')
+            #all_data = evts.arrays(library='pd')
             
             #all_evts = all_data.copy()
             

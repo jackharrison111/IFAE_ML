@@ -102,9 +102,11 @@ class FeatherMaker():
         #Loop over all the samples and read using uproot
         for sample, files in sample_file_paths.items():
             
+            print(f"Running {sample}...")
             if len(files) == 0:
                 print(sample, 0)
                 continue
+                
             nominals = [f+':nominal' for f in files]
             
             #Use uproot to chain all the files together - has the potential for failing:
@@ -112,8 +114,19 @@ class FeatherMaker():
             #TODO: Try and improve this, as it's slow!
             #array = uproot.concatenate(nominals, variables, cut=cut_expr, library='pd', allow_missing=True)
             
-            array = uproot.concatenate(nominals, variables, cut=cut_expr, library='np', allow_missing=True)
-            array = pd.DataFrame(array, columns=variables)
+            if 'data' in sample:
+                array = None
+                for f in nominals:
+                    for data in uproot.iterate(f, variables, cut=cut_expr, library='np', allow_missing=True):
+                        if array is None:
+                            array = pd.DataFrame(data, columns=variables)
+                        else:
+                            data = pd.DataFrame(data, columns=variables) 
+                            array = pd.concat([array,data])
+                    print(f"Got {len(array)} data events.")
+            else:
+                array = uproot.concatenate(nominals, variables, cut=cut_expr, library='np', allow_missing=True)
+                array = pd.DataFrame(array, columns=variables)
             
             if type(array) == list or len(array) == 0:
                 print(sample, array)
@@ -137,7 +150,7 @@ class FeatherMaker():
             
         output_data.reset_index(inplace=True)
         save_name = os.path.join(self.master_config['feather_path'],
-                            f"Regions/{self.master_config['region_name']}.ftr")
+                            f"{self.master_config['region_name']}.ftr")
         output_data.to_feather(save_name)
         print(f"Saved feather file to: {save_name}")
                 
@@ -155,7 +168,9 @@ if __name__ == '__main__':
     
     
     print(f"Starting up!\nMaking feather file using config: {args.config}")
+    
     fm = FeatherMaker(master_config=args.config)
+    print(f"Making feather from: {fm.master_config['nominal_path']}\nSaving feather to: {fm.master_config['feather_path']}")
     
     #Get the required variables from tree
     variables = fm.get_features()
@@ -174,8 +189,8 @@ if __name__ == '__main__':
     from preprocessing.create_variables import VariableMaker
     vm = VariableMaker()
     #TODO: Make this into a config input
-    #funcs = [vm.find_bestZll_pair, vm.calc_4lep_mZll, vm.calc_4lep_pTll, vm.calc_m3l]
-    funcs = [vm.find_Z_pairs, vm.calc_4lep_pTll, vm.calc_m3l]
+    funcs = [vm.find_bestZll_pair, vm.calc_4lep_mZll, vm.calc_4lep_pTll, vm.calc_m3l]
+    #funcs = [vm.find_Z_pairs, vm.calc_4lep_pTll, vm.calc_m3l]
     
     #Make the feather file
     fm.make_output_feather(sample_file_paths, variables, funcs)
