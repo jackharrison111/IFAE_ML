@@ -36,6 +36,8 @@ import math
 from plotting.plot_results import Plotter
 from tqdm import tqdm
 
+import pickle
+
 class Tester():
     
     def __init__(self, config=None):
@@ -73,8 +75,9 @@ class Tester():
         with torch.no_grad():
             
             #for idx, (data, weights, sample, sc_weight) in enumerate(testloader):
-            for idx, data_dict in tqdm(enumerate(testloader)):
-               
+            #for idx, data_dict in tqdm(enumerate(testloader)):
+            for idx, data_dict in enumerate(testloader):   
+            
                 data = data_dict['data']
                 sample = data_dict['sample']
                 sc_weight = data_dict['scaled_weight']
@@ -162,9 +165,6 @@ class Tester():
                              
 
         
-                
-        #Overlay per sample vs VLL
-        
         
         #Overlay bkg and signal per sample
         
@@ -173,7 +173,7 @@ class Tester():
         #Calculate separation + make plot
         if kwargs.get('chi2_plots', False) and sig_output is not None:
             
-            separation_samples = ['Esinglet300', 'Mdoublet700']
+            separation_samples = ['Esinglet150', 'Esinglet300', 'Mdoublet700']
             histos = []
             edges = []
             histos.append(norm_test_logloss_c)
@@ -196,7 +196,7 @@ class Tester():
                 
             with open(os.path.join(self.out_dir, 'Chi2_Distances.txt'),'w') as f:
                 f.writelines(chi2_out)
-            p.plot_hist_stack(edges, histos, xlab='Log loss', ylab='Counts', labels=['Bkg','E(300)','M(700)'], save_name=os.path.join(self.out_dir,'Separation_Hist.png'))# colours=['r','g','b']
+            p.plot_hist_stack(edges, histos, xlab='Log loss', ylab='Counts', labels=['Bkg','E(150)','E(300)','M(700)'], save_name=os.path.join(self.out_dir,'Separation_Hist.png'))# colours=['r','g','b']
 
     
     
@@ -214,7 +214,43 @@ class Tester():
                                                                    weights=bkg_output['weights'])
             p.plot_cdf(test_logloss_edges, test_logloss_counts, xlab='Log loss', ylab='Cum. sum', 
                         save_name=os.path.join(self.out_dir, 'CumSumPlot_All.png'))
-        
+            
+            
+        #Plot Nsig vs Nbackground curves and SAVE outputs
+        if kwargs.get('nsig_vs_nbkg', False):
+            
+            cumsum_hists = []
+            loss_count_hists = []
+            
+            bkg_cumsum = np.cumsum(np.flip(norm_test_logloss_c))/sum(norm_test_logloss_c)
+            cumsum_hists.append(bkg_cumsum)
+            
+            for sample in separation_samples:
+                index = np.where(np.isin(sig_output['samples'],[sample]))
+                #weights = np.array(sig_output['weights'])[index] /  np.sum(np.array(sig_output['weights'])[index])
+                weights = np.array(sig_output['weights'])[index]
+                loss_counts, loss_edges = np.histogram(sig_output['log_losses'][index], bins=logloss_bins, weights=weights)
+                loss_count_hists.append(loss_counts)
+                cum_sum = np.cumsum(np.flip(loss_counts))/sum(loss_counts)
+                cumsum_hists.append(cum_sum)
+                
+         
+            p.plot_Nsig_vs_Nbkg(cumsum_hists, xlab='$N_{bkg}$', ylab='$N_{sig}$',labels=['Bkg','E(150)','E(300)','M(700)'], colors=['b','orange','g','r'],
+                               save_name=os.path.join(self.out_dir, 'Nsig_vs_Nbkg_curves.png'))
+            
+            if kwargs.get('sig_vs_nbkg', False):
+                
+                significances  = []
+                bkg = np.cumsum(np.flip(test_logloss_counts)) / sum(test_logloss_counts)
+                significances.append(bkg[:-20])
+                for i in range(len(loss_count_hists)):
+                    sig = np.cumsum(np.flip(loss_count_hists[i])) / np.sqrt(np.flip(test_logloss_counts))
+                    significances.append(sig[:-20])
+                
+                p.plot_significances(significances, xlab='$N_{bkg}$', ylab='$\sigma$',labels=['Bkg','E(150)','E(300)','M(700)'], colors=['b','orange','g','r'],
+                               save_name=os.path.join(self.out_dir, 'SigvsBkg_curves.png'))
+            
+            
         ...
         
         
@@ -228,45 +264,75 @@ class Tester():
 if __name__ == '__main__':
     
     
+    from model.model_getter import get_model
+    from run.train import Trainer
+    import os
+    from preprocessing.dataset_io import DatasetHandler
+    from preprocessing.dataset import data_set
+    from torch.utils.data import DataLoader
     
-    #Get sample dataset
+    train_conf = 'configs/training_config.yaml'
+    vll_conf = 'configs/VLL_VAE_config.yaml'
+    
+    #NEED TO UPDATE THIS TO BE ABLE TO TEST A TRAINED MODEL EASILY
+    t = Tester(config=train_conf)
     
     #Load a model
+    #even_load_dir = "outputs/EVEN_FINAL_VAE_1318-23-09-2022"
+    #odd_load_dir = "outputs/ODD_FINAL_VAE_1414-23-09-2022"
+    even_load_dir = "outputs/LongRun_VAE_1Z_0b_2SFOS_10GeV/Run_1626-23-12-2022"
     
-    #Evaluate bkg+signal
+    out_dir =  'outputs/eval_10GeV_training'
     
+    load = False
+    save = True
+    
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+    
+    #Just use Even model
+    model = get_model(conf=train_conf)
+    model.load_state_dict(torch.load(os.path.join(even_load_dir,'model_state_dict.pt')))
+    
+    if load:
+        with open(os.path.join(out_dir, 'odd_bkg_data.pkl'), 'rb') as f:
+            bkg_output = pickle.load(f)
+        with open(os.path.join(out_dir, 'sig_data.pkl'), 'rb') as f:
+            sig_output = pickle.load(f)
+        
+    else:
+        trainer = Trainer(model, config=train_conf) #Set use even here, and then test is the odd data
+        train, odd_data = trainer.get_dataset()
+
+        sig_dh  =  DatasetHandler(vll_conf, scalers=trainer.dh.scalers)
+        sig_data = data_set(sig_dh.data)
+        sig_loader = DataLoader(sig_data, batch_size=1, shuffle=True)
+    
+        #Evaluate bkg+signal
+        #Just use even model to evaluate on odd bkg data
+        bkg_output = t.evaluate_vae(model, odd_data)
+        sig_output = t.evaluate_vae(model, sig_loader)
+    
+  
+    if save:
+        with open(os.path.join(out_dir, 'odd_bkg_data.pkl'), 'wb') as f:
+            pickle.dump(bkg_output, f)
+        with open(os.path.join(out_dir, 'sig_data.pkl'), 'wb') as f:
+            pickle.dump(sig_output, f)
+        
+
     analysis = {
         'loss_hist' : True,
         'logloss_hist' : True,
         'logloss_sample_hist' : True,
         'logloss_BkgvsSig_hist' : True,
-        'cdf_hist' : True
+        'cdf_hist' : True,
+        'chi2_plots' : True,
+        'nsig_vs_nbkg' : True,
+        'sig_vs_nbkg' : False
     }
     
-    N=10000
-    x = np.random.normal(loc=10,size=N)
-    logx = np.log(x)
-    y = np.random.normal(loc=100,size=N)
-    z = np.concatenate((x,y))
-    logz = np.log(z)
-    samples = ['VV' for i in x]
-    samples2 = ['VVV' for i in y]
-    s = samples+samples2
+    t.out_dir = out_dir
+    t.analyse_results(bkg_output, sig_output=sig_output, **analysis)
 
-    output = {'loss' : z,
-             'log_losses' : logz,
-             'weights' : np.array([1 for i in range(len(z))]),
-              'samples' : s,
-             }
-    
-    output2 = {'loss' : x,
-             'log_losses' : logx,
-             'weights' : np.array([1 for i in range(len(x))]),
-              'samples' : ['Sig' for i in x],
-             }
-    
-    t = Tester(config='configs/training_config.yaml')
-    t.out_dir = 'outputs/test_dump'
-    
-    t.analyse_results(output, sig_output=output2, **analysis)
     

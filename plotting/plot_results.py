@@ -91,6 +91,40 @@ class Plotter():
     def plot_2d(self):
         ...
 
+    def plot_Nsig_vs_Nbkg(self, cumsum_hists, xlab=None, ylab=None,labels=None,
+                               save_name=None, title=None, colors=[]):
+        
+        for i in range(1,len(cumsum_hists)):
+            plt.plot(cumsum_hists[0], cumsum_hists[i], label=labels[i], color=colors[i])
+            
+        even_bins = [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
+        plt.plot(even_bins, even_bins, '--', color='blue')
+        
+        plt.xticks(even_bins)
+        plt.yticks(even_bins)
+        plt.xlabel(xlab)
+        plt.ylabel(ylab)
+        plt.title(title)
+        plt.legend()
+        plt.grid(True)
+        if save_name:
+            plt.savefig(save_name)
+        plt.close()
+        
+    def plot_significances(self, cumsum_hists, xlab=None, ylab=None,labels=None,
+                               save_name=None, title=None, colors=[]):
+        
+        for i in range(1,len(cumsum_hists)):
+            plt.plot(cumsum_hists[0], cumsum_hists[i], label=labels[i], color=colors[i])
+        plt.xlabel(xlab)
+        plt.ylabel(ylab)
+        plt.title(title)
+        plt.legend()
+        plt.grid(True)
+        if save_name:
+            plt.savefig(save_name)
+        plt.close()
+        ...
         
     
 if __name__ == '__main__':

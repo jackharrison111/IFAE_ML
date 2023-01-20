@@ -6,3 +6,4 @@ XXX_Msinglet300_samples: mc16a/512112, mc16d/512112_AF, mc16e/512112_AF
 XXX_Msinglet700_samples: mc16a/512116, mc16d/512116_AF, mc16e/512116_AF
 XXX_Mdoublet300_samples: mc16a/512099, mc16d/512099_AF, mc16e/512099_AF
 XXX_Mdoublet700_samples: mc16a/512103, mc16d/512103_AF, mc16e/512103_AF
+XXX_Esinglet150_samples: mc16a/512071, mc16d/512071_AF, mc16e/512071_AF

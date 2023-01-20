@@ -103,6 +103,7 @@ class Decoder(nn.Module):
         func_choice = 'Tanh'
         func = getattr(nn, func_choice)()
         prediction = self.decoder(data)
+        #return func(prediction)
         return prediction
         
         
@@ -115,10 +116,10 @@ class AE(nn.Module):
         self.encoder = Encoder(enc_dim, latent_dim)
         self.decoder = Decoder(dec_dim, latent_dim)
         
-    def loss_function(self, recon_x, x, mu, log_var):
+    def loss_function(self, recon_x, x, mu, log_var, **kwargs):
         #BCE = F.binary_cross_entropy(recon_x, x, reduction='sum')
         MSE = F.mse_loss(x, recon_x, reduction='none')   #Works it out element-wise
-        MSE = torch.mean(MSE, dim=1)   #Average across features, leaving per-example MSE
+        MSE = torch.sum(MSE, dim=1)   #Average across features, leaving per-example MSE
         return MSE, None, None
         
     def forward(self, data):
@@ -139,16 +140,16 @@ class VAE(nn.Module):
         self.decoder = Decoder(dec_dimensions, latent_dim)
         self.latent_dim = latent_dim
         
-    def loss_function(self, recon_x, x, mu, log_var, beta=None):
+    def loss_function(self, recon_x, x, mu, log_var, beta=None, **kwargs):
         
         #BCE = F.binary_cross_entropy(recon_x, x, reduction='sum')
         MSE = F.mse_loss(x, recon_x, reduction='none')   #Works it out element-wise
-        MSE = torch.mean(MSE, dim=1)   #Average across features, leaving per-example MSE
+        MSE = torch.sum(MSE, dim=1)   #Average across features, leaving per-example MSE
         KLD = 1 + log_var - mu.pow(2) - log_var.exp()   #Again worked out element-wise
         KLD = -0.5 * torch.sum(KLD, dim=1)   #Sum across features, leaving per-example KLD
         
         if beta is not None:
-            return (1/beta)*MSE + beta*KLD, MSE, KLD
+            return (1/beta)*MSE + beta*KLD, (1/beta)*MSE, beta*KLD
         else:
             return MSE + KLD, MSE, KLD
     

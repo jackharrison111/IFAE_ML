@@ -1,5 +1,7 @@
-samples_path : '/data/at3/scratch3/jharrison/nominal_feather/Regions'
-feather_file : 'CR_1Z_0b_2SFOS_VLLs_newvars.ftr'
+#samples_path : '/data/at3/scratch3/jharrison/nominal_feather/Regions'
+samples_path: '/data/at3/scratch3/jharrison/nominal_feather/Regions/CR_1Z_0b_2SFOS'
+#feather_file : 'CR_1Z_0b_2SFOS_VLLs_newvars.ftr'
+feather_file : 'CR_1Z_0b_2SFOS_VLLs_10GeV.ftr'
 
 #Set training variables
 training_variables:     ['met_met',

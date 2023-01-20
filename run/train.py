@@ -135,8 +135,11 @@ class Trainer():
         
     def make_optimizer(self, learning_rate=1e-2):
         
-        #self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
-        self.optimizer = optim.SGD(self.model.parameters(), lr=learning_rate)
+        
+        if self.config['optimizer'] == 'Adam':
+            self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
+        else:
+            self.optimizer = optim.SGD(self.model.parameters(), lr=learning_rate)
         
         
     def train_vae(self, dataloader, val_loader=None):
@@ -229,20 +232,17 @@ class Trainer():
                         
                         #Don't multiply loss by weights when testing
                         loss = torch.sum(loss)
-                        
-                        loss = torch.dot(self.config['added_weight_factor']*sc_weights, loss) if weight_loss else torch.sum(loss)
                         num_examples=len(weights)
                         
                         if mse is not None:
-                            mse = torch.dot(self.config['added_weight_factor']*sc_weights, mse)/num_examples if weight_loss else torch.sum(mse)/num_examples
-                            kld = torch.dot(self.config['added_weight_factor']*sc_weights, kld)/num_examples if weight_loss else torch.sum(kld)/num_examples
+                            mse = torch.sum(mse)
+                            kld = torch.sum(kld)
 
                         group = self.reversed_groupings.get(samples,'All')
                        
                         running_sum = val_losses.get(group,0) + loss.item()
-                        running_counts = val_counts.get(group,0) + 1
-                        if epoch < -1:
-                            print(f"Loss: {loss.item()} - Running sum for group {group}: {running_sum}, running counts: {running_counts}")
+                        running_counts = val_counts.get(group,0) + num_examples
+                        
                         val_losses[group] = running_sum
                         val_counts[group] = running_counts
 

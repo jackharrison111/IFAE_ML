@@ -99,6 +99,8 @@ class FeatherMaker():
         output_data = pd.DataFrame()
         cut_expr = self.master_config[self.master_config['cut_choice']]
         
+        print(cut_expr)
+        
         #Loop over all the samples and read using uproot
         for sample, files in sample_file_paths.items():
             
@@ -189,7 +191,9 @@ if __name__ == '__main__':
     from preprocessing.create_variables import VariableMaker
     vm = VariableMaker()
     #TODO: Make this into a config input
-    funcs = [vm.find_bestZll_pair, vm.calc_4lep_mZll, vm.calc_4lep_pTll, vm.calc_m3l]
+    func_strings = fm.master_config[fm.master_config['variable_functions_choice']]
+    funcs = [getattr(vm, s) for s in func_strings]
+    #funcs = [vm.find_bestZll_pair, vm.calc_4lep_mZll, vm.calc_4lep_pTll, vm.calc_m3l]
     #funcs = [vm.find_Z_pairs, vm.calc_4lep_pTll, vm.calc_m3l]
     
     #Make the feather file

@@ -1,50 +1,99 @@
 #Set the input config files
 
+region: '1Z_0b_2SFOS_10GeV'
+
 #Bkg configs:
 #variables_file : 'configs/Bkg_variables.txt'
 #samples_file : 'configs/Bkg_samples.txt'
 #json_output : 'configs/Bkg_samples.json'
-#feather_path : "/data/at3/scratch3/jharrison/nominal_feather"
 #nominal_path : "/data/at3/scratch3/jharrison/nominal"
+#feather_path : "/data/at3/scratch3/jharrison/nominal_feather/Regions/CR_1Z_0b_2SFOS"
 
 #Data configs:
-variables_file : 'configs/Data_variables.txt'
-samples_file : 'configs/Data_samples.txt'
-json_output : 'configs/Data_samples.json'
-feather_path : "/data/at3/scratch3/jharrison/nominal_feather/Regions/CR_1Z_0b_2SFOS"
+#variables_file : 'configs/Data_variables.txt'
+#samples_file : 'configs/Data_samples.txt'
+#json_output : 'configs/Data_samples.json'
+#feather_path : "/data/at3/scratch3/jharrison/nominal_feather/Regions/CR_0Z_0b_2SFOS"
 #nominal_path : "/data/at3/scratch3/jharrison/nominal/data"
-nominal_path : "/data/at3/scratch3/multilepton/newvars/data"
+#nominal_path : "/data/at3/scratch3/multilepton/newvars/data"
 
 #VLL configs:
-#variables_file: 'configs/VLL_variables.txt'
-#samples_file : 'configs/VLL_samples.txt'
-#json_output : 'configs/VLL_samples.json'
-#feather_path : "/data/at3/scratch3/jharrison/nominal_feather"
-#nominal_path : "/data/at3/scratch3/jharrison/VLL/"
-#region_name : 'CR_0Z_0b_2SFOS_VLLs_newvars'
+variables_file: 'configs/VLL_variables.txt'
+samples_file : 'configs/VLL_samples.txt'
+json_output : 'configs/VLL_samples.json'
+feather_path : "/data/at3/scratch3/jharrison/nominal_feather/Regions/CR_1Z_0b_2SFOS"
+nominal_path : "/data/at3/scratch3/jharrison/VLL/"
+#region_name : 'CR_0Z_0b_2SFOS_VLLs_newstring'
 #region_name : 'test_region'
 
-region_name : 'CR_1Z_0b_2SFOS_data_newvars_oldString'
-cut_choice : 'cut_1Z_0b_2SFOS'
+region_name : 'CR_1Z_0b_2SFOS_VLLs'
+cut_choice : 'cut_1Z_0b_2SFOS_remade'
+variable_functions_choice: '1Z_0b_2SFOS_funcs'
+
+0Z_0b_0SFOS_funcs: ['find_bestZll_pair', 'calc_4lep_mZll', 'calc_4lep_pTll', 'calc_m3l']
+0Z_0b_1SFOS_funcs: ['find_Z_pairs_0Z_1SFOS', 'calc_4lep_pTll', 'calc_m3l']
+0Z_0b_2SFOS_funcs: ['find_pairings_0Z_2SFOS', 'calc_4lep_pTll', 'calc_m3l']
+1Z_0b_1SFOS_funcs: ['find_Z_pairs_1Z_1SFOS', 'calc_4lep_pTll', 'calc_m3l']
+1Z_0b_2SFOS_funcs: ['find_Z_pairs_1Z', 'calc_4lep_pTll', 'calc_m3l']
+2Z_0b_funcs: ['find_Z_pairs_2Z', 'calc_4lep_pTll', 'calc_m3l']
+
 
 
 #Cut expressions:
+cut_0Z_0b_0SFOS: '(total_charge==0) & (nTaus_OR==0) & (nJets_OR_DL1r_77==0) & (lep_Pt_0*1e-3>25) & (lep_Pt_1*1e-3>25) & (lep_Pt_2*1e-3>25) & (lep_Pt_3*1e-3>25) & (lep_isolationFCLoose_0) & (lep_isolationFCLoose_1) & (lep_isolationFCLoose_2) & (lep_isolationFCLoose_3) & ( (lep_ID_0!=-lep_ID_1)&(lep_ID_2!=-lep_ID_3)&(lep_ID_0!=-lep_ID_2)&(lep_ID_1!=-lep_ID_3)&(lep_ID_0!=-lep_ID_3)&(lep_ID_1!=-lep_ID_2) )'
+
+cut_0Z_0b_1SFOS: '(quadlep_type>0)&(total_charge==0) & (nTaus_OR==0) & (nJets_OR_DL1r_77==0) & (lep_Pt_0*1e-3>25) & (lep_Pt_1*1e-3>25) & (lep_Pt_2*1e-3>25) & (lep_Pt_3*1e-3>25) & (lep_isolationFCLoose_0) & (lep_isolationFCLoose_1) & (lep_isolationFCLoose_2) & (lep_isolationFCLoose_3) & ( ((lep_ID_0==-lep_ID_1)&(abs(Mll01-91.2e3)>10e3)&(lep_ID_2!=-lep_ID_3))|((lep_ID_0==-lep_ID_2)&(abs(Mll02-91.2e3)>10e3)&(lep_ID_1!=-lep_ID_3))|((lep_ID_0==-lep_ID_3)&(abs(Mll03-91.2e3)>10e3)&(lep_ID_1!=-lep_ID_2))|((lep_ID_1==-lep_ID_2)&(abs(Mll12-91.2e3)>10e3)&(lep_ID_0!=-lep_ID_3))|((lep_ID_1==-lep_ID_3)&(abs(Mll13-91.2e3)>10e3)&(lep_ID_1!=-lep_ID_3))|((lep_ID_2==-lep_ID_3)&(abs(Mll23-91.2e3)>10e3)&(lep_ID_0!=-lep_ID_1)) )'
+
+cut_0Z_0b_2SFOS_remade: '(quadlep_type>0) & (total_charge==0) & (nTaus_OR==0) & (nJets_OR_DL1r_77==0) & (lep_Pt_0*1e-3>25) & (lep_Pt_1*1e-3>25) & (lep_Pt_2*1e-3>25) & (lep_Pt_3*1e-3>25) & (lep_isolationFCLoose_0) & (lep_isolationFCLoose_1) & (lep_isolationFCLoose_2) & (lep_isolationFCLoose_3) & ( ( (lep_ID_0==-lep_ID_1)&(abs(Mll01-91.2*1e3)>10*1e3)&(lep_ID_2==-lep_ID_3)&(abs(Mll23-91.2*1e3)>10e3)&((lep_ID_0!=-lep_ID_2)|(abs(Mll02-91.2e3)>10e3))&((lep_ID_1!=-lep_ID_3)|(abs(Mll13-91.2e3)>10e3))&((lep_ID_0!=-lep_ID_3)|(abs(Mll03-91.2e3)>10e3))&((lep_ID_1!=-lep_ID_2)|(abs(Mll12-91.2e3)>10e3))) | ((lep_ID_0==-lep_ID_2)&(abs(Mll02-91.2*1e3)>10*1e3)&(lep_ID_1==-lep_ID_3)&(abs(Mll13-91.2*1e3)>10e3)&((lep_ID_0!=-lep_ID_1)|(abs(Mll01-91.2e3)>10e3))&((lep_ID_2!=-lep_ID_3)|(abs(Mll23-91.2e3)>10e3))&((lep_ID_0!=-lep_ID_3)|(abs(Mll03-91.2e3)>10e3))&((lep_ID_1!=-lep_ID_2)|(abs(Mll12-91.2e3)>10e3))) | ((lep_ID_0==-lep_ID_3)&(abs(Mll03-91.2*1e3)>10*1e3)&(lep_ID_1==-lep_ID_2)&(abs(Mll12-91.2*1e3)>10e3)&((lep_ID_0!=-lep_ID_2)|(abs(Mll02-91.2e3)>10e3))&((lep_ID_1!=-lep_ID_3)|(abs(Mll13-91.2e3)>10e3))&((lep_ID_0!=-lep_ID_1)|(abs(Mll01-91.2e3)>10e3))&((lep_ID_2!=-lep_ID_3)|(abs(Mll23-91.2e3)>10e3)) ) )'
+
+cut_1Z_0b_1SFOS_remade: '(quadlep_type>0) & (total_charge==0) & (nTaus_OR==0) & (nJets_OR_DL1r_77==0)  & (lep_Pt_0*1e-3>25) & (lep_Pt_1*1e-3>25) & (lep_Pt_2*1e-3>25) & (lep_Pt_3*1e-3>25) & (lep_isolationFCLoose_0) & (lep_isolationFCLoose_1) & (lep_isolationFCLoose_2) & (lep_isolationFCLoose_3) & ( ((lep_ID_0==-lep_ID_1)&(abs(Mll01-91.2e3)<10e3)&(lep_ID_2!=-lep_ID_3) ) | ((lep_ID_0==-lep_ID_2)&(abs(Mll02-91.2e3)<10e3)&(lep_ID_1!=-lep_ID_3) ) | ((lep_ID_0==-lep_ID_3)&(abs(Mll03-91.2e3)<10e3)&(lep_ID_1!=-lep_ID_2) ) | ((lep_ID_1==-lep_ID_2)&(abs(Mll12-91.2e3)<10e3)&(lep_ID_0!=-lep_ID_3) ) | ((lep_ID_1==-lep_ID_3)&(abs(Mll13-91.2e3)<10e3)&(lep_ID_0!=-lep_ID_2) ) | ((lep_ID_2==-lep_ID_3)&(abs(Mll23-91.2e3)<10e3)&(lep_ID_0!=-lep_ID_1)) )'
+
+cut_1Z_0b_2SFOS_remade : '(quadlep_type>0)&(total_charge==0) & (nTaus_OR==0) & (nJets_OR_DL1r_77==0)  & (lep_Pt_0*1e-3>25) & (lep_Pt_1*1e-3>25) & (lep_Pt_2*1e-3>25) & (lep_Pt_3*1e-3>25) & (lep_isolationFCLoose_0) & (lep_isolationFCLoose_1) & (lep_isolationFCLoose_2) & (lep_isolationFCLoose_3) & (((lep_ID_0==-lep_ID_1)&(abs(Mll01-91.2e3)<10e3)& ((lep_ID_2==-lep_ID_3) & (abs(Mll23-91.2e3)>10e3))) |((lep_ID_0==-lep_ID_2)&(abs(Mll02-91.2e3)<10e3)& ((lep_ID_1==-lep_ID_3) & (abs(Mll13-91.2e3)>10e3))) |((lep_ID_0==-lep_ID_3)&(abs(Mll03-91.2e3)<10e3)& ((lep_ID_1==-lep_ID_2) & (abs(Mll12-91.2e3)>10e3))) |((lep_ID_1==-lep_ID_2)&(abs(Mll12-91.2e3)<10e3)& ((lep_ID_0==-lep_ID_3) & (abs(Mll03-91.2e3)>10e3))) |((lep_ID_1==-lep_ID_3)&(abs(Mll13-91.2e3)<10e3)& ((lep_ID_0==-lep_ID_2) & (abs(Mll02-91.2e3)>10e3))) |((lep_ID_2==-lep_ID_3)&(abs(Mll23-91.2e3)<10e3)& ((lep_ID_0==-lep_ID_1) & (abs(Mll01-91.2e3)>10e3))))'
+
+cut_2Z_0b: '(quadlep_type>0)&(total_charge==0) & (nTaus_OR==0) & (nJets_OR_DL1r_77==0) & (lep_Pt_0*1e-3>25) & (lep_Pt_1*1e-3>25) & (lep_Pt_2*1e-3>25) & (lep_Pt_3*1e-3>25) & (lep_isolationFCLoose_0) & (lep_isolationFCLoose_1) & (lep_isolationFCLoose_2) & (lep_isolationFCLoose_3) & ( ((lep_ID_0==-lep_ID_1) & (abs(Mll01-91.2e3)<10e3) & (lep_ID_2==-lep_ID_3) & (abs(Mll23-91.2e3)<10e3)) | ((lep_ID_0==-lep_ID_2) & (abs(Mll02-91.2e3)<10e3) & (lep_ID_1==-lep_ID_3) & (abs(Mll13-91.2e3)<10e3)) | ((lep_ID_0==-lep_ID_3) & (abs(Mll03-91.2e3)<10e3) & (lep_ID_1==-lep_ID_2) & (abs(Mll12-91.2e3)<10e3)) )'
+
+
+#With bjets:
+
+cut_0Z_1b_1SFOS: '(quadlep_type>0)&(total_charge==0) & (nTaus_OR==0) & (nJets_OR_DL1r_77>=1) & (lep_Pt_0*1e-3>25) & (lep_Pt_1*1e-3>25) & (lep_Pt_2*1e-3>25) & (lep_Pt_3*1e-3>25) & (lep_isolationFCLoose_0) & (lep_isolationFCLoose_1) & (lep_isolationFCLoose_2) & (lep_isolationFCLoose_3) & ( ((lep_ID_0==-lep_ID_1)&(abs(Mll01-91.2e3)>10e3)&(lep_ID_2!=-lep_ID_3))|((lep_ID_0==-lep_ID_2)&(abs(Mll02-91.2e3)>10e3)&(lep_ID_1!=-lep_ID_3))|((lep_ID_0==-lep_ID_3)&(abs(Mll03-91.2e3)>10e3)&(lep_ID_1!=-lep_ID_2))|((lep_ID_1==-lep_ID_2)&(abs(Mll12-91.2e3)>10e3)&(lep_ID_0!=-lep_ID_3))|((lep_ID_1==-lep_ID_3)&(abs(Mll13-91.2e3)>10e3)&(lep_ID_1!=-lep_ID_3))|((lep_ID_2==-lep_ID_3)&(abs(Mll23-91.2e3)>10e3)&(lep_ID_0!=-lep_ID_1)) )'
+
+cut_1Z_1b_1SFOS: '(quadlep_type>0) & (total_charge==0) & (nTaus_OR==0) & (nJets_OR_DL1r_77>=1)  & (lep_Pt_0*1e-3>25) & (lep_Pt_1*1e-3>25) & (lep_Pt_2*1e-3>25) & (lep_Pt_3*1e-3>25) & (lep_isolationFCLoose_0) & (lep_isolationFCLoose_1) & (lep_isolationFCLoose_2) & (lep_isolationFCLoose_3) & ( ((lep_ID_0==-lep_ID_1)&(abs(Mll01-91.2e3)<10e3)&(lep_ID_2!=-lep_ID_3) ) | ((lep_ID_0==-lep_ID_2)&(abs(Mll02-91.2e3)<10e3)&(lep_ID_1!=-lep_ID_3) ) | ((lep_ID_0==-lep_ID_3)&(abs(Mll03-91.2e3)<10e3)&(lep_ID_1!=-lep_ID_2) ) | ((lep_ID_1==-lep_ID_2)&(abs(Mll12-91.2e3)<10e3)&(lep_ID_0!=-lep_ID_3) ) | ((lep_ID_1==-lep_ID_3)&(abs(Mll13-91.2e3)<10e3)&(lep_ID_0!=-lep_ID_2) ) | ((lep_ID_2==-lep_ID_3)&(abs(Mll23-91.2e3)<10e3)&(lep_ID_0!=-lep_ID_1)) )'
+
+cut_1Z_1b_2SFOS : '(quadlep_type>0)&(total_charge==0) & (nTaus_OR==0) & (nJets_OR_DL1r_77>=1)  & (lep_Pt_0*1e-3>25) & (lep_Pt_1*1e-3>25) & (lep_Pt_2*1e-3>25) & (lep_Pt_3*1e-3>25) & (lep_isolationFCLoose_0) & (lep_isolationFCLoose_1) & (lep_isolationFCLoose_2) & (lep_isolationFCLoose_3) & (((lep_ID_0==-lep_ID_1)&(abs(Mll01-91.2e3)<10e3)& ((lep_ID_2==-lep_ID_3) & (abs(Mll23-91.2e3)>10e3))) |((lep_ID_0==-lep_ID_2)&(abs(Mll02-91.2e3)<10e3)& ((lep_ID_1==-lep_ID_3) & (abs(Mll13-91.2e3)>10e3))) |((lep_ID_0==-lep_ID_3)&(abs(Mll03-91.2e3)<10e3)& ((lep_ID_1==-lep_ID_2) & (abs(Mll12-91.2e3)>10e3))) |((lep_ID_1==-lep_ID_2)&(abs(Mll12-91.2e3)<10e3)& ((lep_ID_0==-lep_ID_3) & (abs(Mll03-91.2e3)>10e3))) |((lep_ID_1==-lep_ID_3)&(abs(Mll13-91.2e3)<10e3)& ((lep_ID_0==-lep_ID_2) & (abs(Mll02-91.2e3)>10e3))) |((lep_ID_2==-lep_ID_3)&(abs(Mll23-91.2e3)<10e3)& ((lep_ID_0==-lep_ID_1) & (abs(Mll01-91.2e3)>10e3))))'
+
+cut_2Z_1b: '(quadlep_type>0)&(total_charge==0) & (nTaus_OR==0) & (nJets_OR_DL1r_77>=1) & (lep_Pt_0*1e-3>25) & (lep_Pt_1*1e-3>25) & (lep_Pt_2*1e-3>25) & (lep_Pt_3*1e-3>25) & (lep_isolationFCLoose_0) & (lep_isolationFCLoose_1) & (lep_isolationFCLoose_2) & (lep_isolationFCLoose_3) & ( ((lep_ID_0==-lep_ID_1) & (abs(Mll01-91.2e3)<10e3) & (lep_ID_2==-lep_ID_3) & (abs(Mll23-91.2e3)<10e3)) | ((lep_ID_0==-lep_ID_2) & (abs(Mll02-91.2e3)<10e3) & (lep_ID_1==-lep_ID_3) & (abs(Mll13-91.2e3)<10e3)) | ((lep_ID_0==-lep_ID_3) & (abs(Mll03-91.2e3)<10e3) & (lep_ID_1==-lep_ID_2) & (abs(Mll12-91.2e3)<10e3)) )'
+
+
+#With 10GeV
+cut_1Z_0b_2SFOS_10GeV : '(quadlep_type>0)&(total_charge==0) & (nTaus_OR==0) & (nJets_OR_DL1r_77==0)  & (lep_Pt_0*1e-3>10) & (lep_Pt_1*1e-3>10) & (lep_Pt_2*1e-3>10) & (lep_Pt_3*1e-3>10) & (lep_isolationFCLoose_0) & (lep_isolationFCLoose_1) & (lep_isolationFCLoose_2) & (lep_isolationFCLoose_3) &(((lep_ID_0==-lep_ID_1)&(abs(Mll01-91.2e3)<10e3)&(Mll01>12e3)&(lep_ID_2==-lep_ID_3)&(abs(Mll23-91.2e3)>10e3)&(Mll23>12e3))|((lep_ID_0==-lep_ID_2)&(abs(Mll02-91.2e3)<10e3)&(Mll02>12e3)&(lep_ID_1==-lep_ID_3)&(abs(Mll13-91.2e3)>10e3)&(Mll13>12e3))|((lep_ID_0==-lep_ID_3)&(abs(Mll03-91.2e3)<10e3)&(Mll03>12e3)&(lep_ID_1==-lep_ID_2)&(abs(Mll12-91.2e3)>10e3)&(Mll12>12e3))|((lep_ID_1==-lep_ID_2)&(abs(Mll12-91.2e3)<10e3)&(Mll12>12e3)&(lep_ID_0==-lep_ID_3)&(abs(Mll03-91.2e3)>10e3)&(Mll03>12e3))|((lep_ID_1==-lep_ID_3)&(abs(Mll13-91.2e3)<10e3)&(Mll13>12e3)&(lep_ID_0==-lep_ID_2)&(abs(Mll02-91.2e3)>10e3)&(Mll02>12e3))|((lep_ID_2==-lep_ID_3)&(abs(Mll23-91.2e3)<10e3)&(Mll23>12e3)&(lep_ID_0==-lep_ID_1)&(abs(Mll01-91.2e3)>10e3)&(Mll01>12e3)))'
+
+
+
+
+########################################################################################################################
+########################################################################################################################
+
+
+
 cut_0Z_0b_2SFOS: '(total_charge==0) & (nTaus_OR==0) & (nJets_OR_DL1r_77==0) & (lep_Pt_0*1e-3>25) & (lep_Pt_1*1e-3>25) & (lep_Pt_2*1e-3>25) & (lep_Pt_3*1e-3>25) & (lep_isolationFCLoose_0) & (lep_isolationFCLoose_1) & (lep_isolationFCLoose_2) & (lep_isolationFCLoose_3) & ( ((lep_ID_0!=-lep_ID_1)|(abs(Mll01-91.2e3)>10e3)) & ((lep_ID_0!=-lep_ID_2)|(abs(Mll02-91.2e3)>10e3)) & ((lep_ID_0!=-lep_ID_3)|(abs(Mll03-91.2e3)>10e3)) & ((lep_ID_1!=-lep_ID_2)|(abs(Mll12-91.2e3)>10e3)) & ((lep_ID_1!=-lep_ID_3)|(abs(Mll13-91.2e3)>10e3)) & ((lep_ID_2!=-lep_ID_3)|(abs(Mll23-91.2e3)>10e3)) ) & ( ((lep_ID_0==-lep_ID_1)&(lep_ID_2==-lep_ID_3)) | ((lep_ID_0==-lep_ID_2)&(lep_ID_1==-lep_ID_3)) | ((lep_ID_0==-lep_ID_3)&(lep_ID_1==-lep_ID_2)) )'
 
-cut_1Z_0b_2SFOS : '(total_charge==0) & (nTaus_OR==0) & (nJets_OR_DL1r_77==0)  & (lep_Pt_0*1e-3>25) & (lep_Pt_1*1e-3>25) & (lep_Pt_2*1e-3>25) & (lep_Pt_3*1e-3>25) & (lep_isolationFCLoose_0) & (lep_isolationFCLoose_1) & (lep_isolationFCLoose_2) & (lep_isolationFCLoose_3) & ((lep_ID_0==-lep_ID_1)&(abs(Mll01-91.2e3)<10e3)&((lep_ID_2!=lep_ID_3) | (abs(Mll23-91.2e3)>10e3)) | (lep_ID_0==-lep_ID_2)&(abs(Mll02-91.2e3)<10e3)&((lep_ID_1!=lep_ID_3) | (abs(Mll13-91.2e3)>10e3)) |(lep_ID_0==-lep_ID_3)&(abs(Mll03-91.2e3)<10e3)&((lep_ID_1!=lep_ID_2) | (abs(Mll12-91.2e3)>10e3)) |(lep_ID_1==-lep_ID_2)&(abs(Mll12-91.2e3)<10e3)&((lep_ID_0!=lep_ID_3) | (abs(Mll03-91.2e3)>10e3)) |(lep_ID_1==-lep_ID_3)&(abs(Mll13-91.2e3)<10e3)&((lep_ID_0!=lep_ID_2) | (abs(Mll02-91.2e3)>10e3)) |(lep_ID_2==-lep_ID_3)&(abs(Mll23-91.2e3)<10e3)&((lep_ID_0!=lep_ID_1) | (abs(Mll01-91.2e3)>10e3))) & ( (((lep_ID_0==-lep_ID_1)&(lep_ID_2==-lep_ID_3))) | (((lep_ID_0==-lep_ID_2)&(lep_ID_1==-lep_ID_3))) | (((lep_ID_0==-lep_ID_3)&(lep_ID_1==-lep_ID_2))) )'
-
-
-cut_1Z_0b_2SFOS_remade : '(total_charge==0) & (nTaus_OR==0) & (nJets_OR_DL1r_77==0)  & (lep_Pt_0*1e-3>25) & (lep_Pt_1*1e-3>25) & (lep_Pt_2*1e-3>25) & (lep_Pt_3*1e-3>25) & (lep_isolationFCLoose_0) & (lep_isolationFCLoose_1) & (lep_isolationFCLoose_2) & (lep_isolationFCLoose_3) & (((lep_ID_0==-lep_ID_1)&(abs(Mll01-91.2e3)<10e3)& ((lep_ID_2==-lep_ID_3) & (abs(Mll23-91.2e3)>10e3))) |((lep_ID_0==-lep_ID_2)&(abs(Mll02-91.2e3)<10e3)& ((lep_ID_1==-lep_ID_3) & (abs(Mll13-91.2e3)>10e3))) |((lep_ID_0==-lep_ID_3)&(abs(Mll03-91.2e3)<10e3)& ((lep_ID_1==-lep_ID_2) & (abs(Mll12-91.2e3)>10e3))) |((lep_ID_1==-lep_ID_2)&(abs(Mll12-91.2e3)<10e3)& ((lep_ID_0==-lep_ID_3) & (abs(Mll03-91.2e3)>10e3))) |((lep_ID_1==-lep_ID_3)&(abs(Mll13-91.2e3)<10e3)& ((lep_ID_0==-lep_ID_2) & (abs(Mll02-91.2e3)>10e3))) |((lep_ID_2==-lep_ID_3)&(abs(Mll23-91.2e3)<10e3)& ((lep_ID_0==-lep_ID_1) & (abs(Mll01-91.2e3)>10e3))))'
 
 
 
 
-cut_2Z_0b: '( ((lep_ID_0==-lep_ID_1) & (abs(Mll01-91.2e3)<10e3) & (lep_ID_2==-lep_ID_3) & (abs(Mll23-91.2e3)<10e3)) | ((lep_ID_0==-lep_ID_2) & (abs(Mll02-91.2e3)<10e3) & (lep_ID_1==-lep_ID_3) & (abs(Mll13-91.2e3)<10e3)) | ((lep_ID_0==-lep_ID_3) & (abs(Mll03-91.2e3)<10e3) & (lep_ID_1==-lep_ID_2) & (abs(Mll12-91.2e3)<10e3)) )'
+cut_1Z_0b_2SFOS_wrong : '(total_charge==0) & (nTaus_OR==0) & (nJets_OR_DL1r_77==0)  & (lep_Pt_0*1e-3>25) & (lep_Pt_1*1e-3>25) & (lep_Pt_2*1e-3>25) & (lep_Pt_3*1e-3>25) & (lep_isolationFCLoose_0) & (lep_isolationFCLoose_1) & (lep_isolationFCLoose_2) & (lep_isolationFCLoose_3) & ((lep_ID_0==-lep_ID_1)&(abs(Mll01-91.2e3)<10e3)&((lep_ID_2!=lep_ID_3) | (abs(Mll23-91.2e3)>10e3)) | (lep_ID_0==-lep_ID_2)&(abs(Mll02-91.2e3)<10e3)&((lep_ID_1!=lep_ID_3) | (abs(Mll13-91.2e3)>10e3)) |(lep_ID_0==-lep_ID_3)&(abs(Mll03-91.2e3)<10e3)&((lep_ID_1!=lep_ID_2) | (abs(Mll12-91.2e3)>10e3)) |(lep_ID_1==-lep_ID_2)&(abs(Mll12-91.2e3)<10e3)&((lep_ID_0!=lep_ID_3) | (abs(Mll03-91.2e3)>10e3)) |(lep_ID_1==-lep_ID_3)&(abs(Mll13-91.2e3)<10e3)&((lep_ID_0!=lep_ID_2) | (abs(Mll02-91.2e3)>10e3)) |(lep_ID_2==-lep_ID_3)&(abs(Mll23-91.2e3)<10e3)&((lep_ID_0!=lep_ID_1) | (abs(Mll01-91.2e3)>10e3))) & ( (((lep_ID_0==-lep_ID_1)&(lep_ID_2==-lep_ID_3))) | (((lep_ID_0==-lep_ID_2)&(lep_ID_1==-lep_ID_3))) | (((lep_ID_0==-lep_ID_3)&(lep_ID_1==-lep_ID_2))) )'
 
 
-cut_1Z_0b_0SFOS : ''
 
-cut_1Z_0b_1SFOS : '(total_charge==0) & (nTaus_OR==0) & (nJets_OR_DL1r_77==0)  & (lep_Pt_0*1e-3>25) & (lep_Pt_1*1e-3>25) & (lep_Pt_2*1e-3>25) & (lep_Pt_3*1e-3>25) & (lep_isolationFCLoose_0) & (lep_isolationFCLoose_1) & (lep_isolationFCLoose_2) & (lep_isolationFCLoose_3) & ((lep_ID_0==-lep_ID_1)&(abs(Mll01-91.2e3)<10e3)) & ((lep_ID_2!=-lep_ID_3)|(abs(Mll23-91.2e3)>10e3)) | (lep_ID_0==-lep_ID_2)&(abs(Mll02-91.2e3)<10e3)) & ((lep_ID_1!=-lep_ID_3)|(abs(Mll13-91.2e3)>10e3)) | (lep_ID_0==-lep_ID_3)&(abs(Mll03-91.2e3)<10e3)) & ((lep_ID_1!=-lep_ID_2)|(abs(Mll12-91.2e3)>10e3)) | (lep_ID_1==-lep_ID_2)&(abs(Mll12-91.2e3)<10e3)) & ((lep_ID_0!=-lep_ID_3)|(abs(Mll03-91.2e3)>10e3)) | (lep_ID_1==-lep_ID_3)&(abs(Mll13-91.2e3)<10e3)) & ((lep_ID_0!=-lep_ID_2)|(abs(Mll02-91.2e3)>10e3)) | (lep_ID_2==-lep_ID_3)&(abs(Mll23-91.2e3)<10e3)) & ((lep_ID_0!=-lep_ID_1)|(abs(Mll01-91.2e3)>10e3)) ) & ( ((lep_ID_0==-lep_ID_1)&(lep_ID_2!=-lep_ID_3)) | ((lep_ID_0==-lep_ID_2)&(lep_ID_1!=-lep_ID_3)) | ((lep_ID_0==-lep_ID_3)&(lep_ID_1!=-lep_ID_2)) | ((lep_ID_1==-lep_ID_2)&(lep_ID_0!=-lep_ID_3)) | ((lep_ID_1==-lep_ID_3)&(lep_ID_0!=-lep_ID_2)) | ((lep_ID_2==-lep_ID_3)&(lep_ID_0!=-lep_ID_1)))'
+
+
+
+
+
+
+
+
+cut_1Z_0b_1SFOS : '(quadlep_type>0) & (total_charge==0) & (nTaus_OR==0) & (nJets_OR_DL1r_77==0)  & (lep_Pt_0*1e-3>25) & (lep_Pt_1*1e-3>25) & (lep_Pt_2*1e-3>25) & (lep_Pt_3*1e-3>25) & (lep_isolationFCLoose_0) & (lep_isolationFCLoose_1) & (lep_isolationFCLoose_2) & (lep_isolationFCLoose_3) & ((lep_ID_0==-lep_ID_1)&(abs(Mll01-91.2e3)<10e3)) & ((lep_ID_2!=-lep_ID_3)|(abs(Mll23-91.2e3)>10e3)) | (lep_ID_0==-lep_ID_2)&(abs(Mll02-91.2e3)<10e3)) & ((lep_ID_1!=-lep_ID_3)|(abs(Mll13-91.2e3)>10e3)) | (lep_ID_0==-lep_ID_3)&(abs(Mll03-91.2e3)<10e3)) & ((lep_ID_1!=-lep_ID_2)|(abs(Mll12-91.2e3)>10e3)) | (lep_ID_1==-lep_ID_2)&(abs(Mll12-91.2e3)<10e3)) & ((lep_ID_0!=-lep_ID_3)|(abs(Mll03-91.2e3)>10e3)) | (lep_ID_1==-lep_ID_3)&(abs(Mll13-91.2e3)<10e3)) & ((lep_ID_0!=-lep_ID_2)|(abs(Mll02-91.2e3)>10e3)) | (lep_ID_2==-lep_ID_3)&(abs(Mll23-91.2e3)<10e3)) & ((lep_ID_0!=-lep_ID_1)|(abs(Mll01-91.2e3)>10e3)) ) & ( ((lep_ID_0==-lep_ID_1)&(lep_ID_2!=-lep_ID_3)) | ((lep_ID_0==-lep_ID_2)&(lep_ID_1!=-lep_ID_3)) | ((lep_ID_0==-lep_ID_3)&(lep_ID_1!=-lep_ID_2)) | ((lep_ID_1==-lep_ID_2)&(lep_ID_0!=-lep_ID_3)) | ((lep_ID_1==-lep_ID_3)&(lep_ID_0!=-lep_ID_2)) | ((lep_ID_2==-lep_ID_3)&(lep_ID_0!=-lep_ID_1)))'
 
 
 

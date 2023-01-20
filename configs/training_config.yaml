@@ -1,16 +1,21 @@
 #samples_path : '/data/at3/scratch3/jharrison/nominal_feather/Regions'
 samples_path: '/data/at3/scratch3/jharrison/nominal_feather/Regions/CR_1Z_0b_2SFOS'
-#feather_file : 'CR_1Z_0b_2SFOS_newvars.ftr'
-feather_file : 'CR_1Z_0b_2SFOS_NewPairings.ftr'
-signal_file : 'CR_1Z_0b_2SFOS_VLLs_newvars.ftr'
+feather_file : 'CR_1Z_0b_2SFOS_10GeV.ftr'
+#feather_file : 'CR_1Z_0b_1SFOS.ftr'
+#signal_file: 'CR_1Z_0b_2SFOS_VLLs_NewPairings.ftr'
+#signal_file: 'CR_0Z_0b_2SFOS_VLLs_newstring.ftr'
+signal_file: 'CR_1Z_0b_2SFOS_VLLs_10GeV.ftr'
 
 #Ntuple output settings
-add_to_ntuple: True
+#add_to_ntuple: True
 base_dir: '/data/at3/scratch3/jharrison/nominal/'
 out_dir: '/data/at3/scratch3/jharrison/mod_ntuples_newvars/'
 
 vll_base_dir: '/data/at3/scratch3/jharrison/VLL'
 vll_out_dir: '/data/at3/scratch3/jharrison/mod_VLL'
+
+out_folder: 'ShortRun_AE_1Z_0b_2SFOS_10GeV'
+
 
 #Set training variables
 training_variables:     ['met_met',
@@ -36,22 +41,24 @@ training_variables:     ['met_met',
     'other_ptZll'
 ]
 
+
 #Set training hyperparameters
 Train : True
-train_size: -1
+train_size: 500
 model_type : 'VAE'
-batch_size : 1024
-learning_rate : 0.00005
-num_epochs : 30
+batch_size : 512
+learning_rate : 1e-4 #AE
+num_epochs : 2000
+optimizer: 'SGD'
 load_path : 'outputs/VAE_1943-16-08-2022/model_state_dict.pt'
 test_dump : False
-use_eventnumber: False
+use_eventnumber: True
 even_or_odd : 'Even'
-beta: 0.5
+beta: 1
 
 #Preprocessing settings
 remove_zero_weights : True
-remove_negative_weights : True
+remove_negative_weights : False
 weight_loss : True
 added_weight_factor : 500
 
@@ -59,8 +66,8 @@ added_weight_factor : 500
 validation_groups : ['VV', 'Top', 'VH', 'VVV']
 validation_fraction : 0.2
 test_fraction : 0.2
-val_frequency : 2
-num_test_samples : -1
+val_frequency : 20
+num_test_samples : 500
 evaluate_signals : True
 
 

@@ -80,6 +80,9 @@ if __name__ == '__main__':
     
     for i, file in enumerate(all_root_files):
         
+        if 'data16' not in file:
+            continue
+        
         print(f"Running file {file}. {i} / {len(all_root_files)}")
         
         save_path = file.split('newvars/data/')[1]
@@ -90,9 +93,9 @@ if __name__ == '__main__':
         #CHECK IF DSID IS IN THE TRAINING SAMPLES
         dsid = os.path.split(save_path)[1]
        
-    
-        #Instead of opening the whole file, find a way to chunk it and update the ntuples? 
         
+        
+        '''
         with uproot.open(file + ':nominal') as evts:
                  
             if len(evts) == 0:
@@ -104,7 +107,15 @@ if __name__ == '__main__':
             #all_data = evts.arrays(library='pd')
             
             #all_evts = all_data.copy()
+            '''
+        out_data = None
+        with uproot.open(file+':nominal') as f:
+            vars = list(f.keys())
             
+        #Instead of opening the whole file, find a way to chunk it and update the ntuples? 
+        for all_data in uproot.iterate(file+':nominal', cut=cut_expr, library='np', allow_missing=True,step_size='1 GB'):
+            
+            all_data = pd.DataFrame(all_data, columns=vars)
             #Make the variables required
             vm = VariableMaker()
             funcs = [vm.find_bestZll_pair, vm.calc_4lep_mZll, vm.calc_4lep_pTll, vm.calc_m3l]
@@ -112,6 +123,8 @@ if __name__ == '__main__':
                 all_data = f(all_data)
                 print(f"Done function {i}.")
                 
+            del vm
+            
             all_data.drop(columns=['best_Zllpair', 'other_Zllpair'], inplace=True)
             
             '''
@@ -146,6 +159,7 @@ if __name__ == '__main__':
                     even_evts[col] = scaler.transform(np.array(even_evts[col]).reshape(-1,1))
                     even_data = torch.Tensor(even_evts.values)
                     
+            del even_evts, odd_evts, scaler
             print(f"Even data: {len(even_data)}, Odd data: {len(odd_data)}")
             with torch.no_grad():
                 
@@ -163,9 +177,16 @@ if __name__ == '__main__':
                     logloss = torch.log(loss)
                     all_data.loc[(all_data['eventNumber'] % 2==1),'VAE_score_1Z0b2SFOS'] =  logloss.numpy()
                 
+                if out_data is None:
+                    out_data = all_data
+                else:
+                    out_data = pd.concat([out_data,all_data])
+                    
+                print(f"Output data: {len(out_data)}")
+                del all_data, even_data, odd_data
             
         with uproot.recreate(outfile) as f:
-            f['nominal'] = all_data
+            f['nominal'] = out_data
             print(f"Saved file to {outfile}.")
             
     

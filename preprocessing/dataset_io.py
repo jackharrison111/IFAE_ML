@@ -35,9 +35,9 @@ class DatasetHandler():
         else:
             self.config = dataset_config
             
-        data_path = os.path.join(self.config['samples_path'], self.config['feather_file'])
+        self.data_path = os.path.join(self.config['samples_path'], self.config['feather_file'])
         
-        self.get_dataset(data_path, chosen_samples=self.config.get('chosen_samples',None))
+        self.get_dataset(self.data_path, chosen_samples=self.config.get('chosen_samples',None))
         self.calculate_mcweight()
         self.reduce_to_training_variables(self.config['training_variables'])
         self.clean_dataset()
@@ -63,6 +63,9 @@ class DatasetHandler():
         self.data.loc[self.data['RunYear'].isin([2018]), 'lumi_scale'] = 58450.1*(1/total_lum)
 
         self.data['weight'] = self.data['lumi_scale']*self.data['custTrigSF_TightElMediumMuID_FCLooseIso_DLT']*self.data['weight_pileup']*self.data['jvtSF_customOR']*self.data['bTagSF_weight_DL1r_77']*self.data['weight_mc']*self.data['xs']*self.data['lep_SF_CombinedLoose_0']*self.data['lep_SF_CombinedLoose_1']*self.data['lep_SF_CombinedLoose_2']*self.data['lep_SF_CombinedLoose_3']/self.data['totalEventsWeighted']
+        
+        #Need to multiply by total_lum
+        self.data['weight'] = self.data['weight']*total_lum
 
     
     def reduce_to_training_variables(self, training_variables):
