@@ -4,7 +4,6 @@
 
 #Read data
 
-
 #Preprocess (select variables of interest) + remove duplicates + nans
 
 #Calculate weights ( + remove negative or 0 weights)
@@ -61,6 +60,11 @@ from tqdm.auto import tqdm
 from time import perf_counter
 import yaml
 
+
+#Utils
+from utils._utils import load_yaml_config, get_reversed_groupings, make_output_folder
+
+
 #Dataset includes
 from preprocessing.dataset_io import DatasetHandler
 from preprocessing.dataset import data_set
@@ -69,51 +73,27 @@ from torch.utils.data import DataLoader
 #Plotting
 from plotting.plot_results import Plotter
 
+
+
 class Trainer():
     
-    def __init__(self, model, config, sample_groupings={}):
+    def __init__(self, model, config, sample_groupings={}, output_dir=None):
         
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.model = model.to(self.device)
         
-        if type(config) == str:
-            with open(config, 'r') as f:
-                self.config = yaml.safe_load(f)
+        self.config = load_yaml_config(config)
+        
+        if not output_dir:
+            self.output_dir = make_output_folder(config)
         else:
-            self.config = config
+            self.output_dir = output_dir
         
-        self.reversed_groupings = {}
-        for key, values in self.config['groupings'].items():
-            for val in values:
-                self.reversed_groupings[val] = key
+        self.reversed_groupings = get_reversed_groupings(self.config['groupings'])
         
-        date = dt.datetime.strftime(dt.datetime.now(),"%H%M-%d-%m-%Y")
-        self.output_dir = os.path.join('outputs',self.config['out_folder'], f'Run_{date}')
-        if not os.path.exists(self.output_dir):
-            os.makedirs(self.output_dir)
-        
-        if self.config['test_dump']:
-            print("Outputting to test_dump.")
-            self.output_dir = 'outputs/test_dump'
-        
-        self.make_optimizer()
+        self.make_optimizer(learning_rate=self.config['learning_rate'])
         self.p = Plotter()
         
-        
-    def get_dataset(self, config=None):
-        
-        if not config:
-            config = self.config
-        self.dh = DatasetHandler(config)
-        data, val = self.dh.split_per_sample(val=True, use_eventnumber=self.dh.config.get('use_eventnumber',None))
-        
-        train_data = data_set(data)
-        val_data = data_set(val)
-        
-        train_loader = DataLoader(train_data, batch_size=self.dh.config['batch_size'], shuffle=True)
-        val_loader = DataLoader(val_data, batch_size=1)
-        
-        return train_loader, val_loader
     
     '''
     def loss_function(self, recon_x, x, mu, log_var, variational=True, beta=None):
@@ -142,7 +122,7 @@ class Trainer():
             self.optimizer = optim.SGD(self.model.parameters(), lr=learning_rate)
         
         
-    def train_vae(self, dataloader, val_loader=None):
+    def train_model(self, dataloader, val_loader=None):
         
         print(f"Using available: {self.device}")
         
@@ -153,20 +133,18 @@ class Trainer():
         weight_loss = self.config['weight_loss']
         s = perf_counter()
         for epoch in range(self.config['num_epochs']):
+            
             l1 = perf_counter()
-            epoch_loss = 0
-            epoch_counts = 0
-            epoch_kld = 0
-            epoch_mse = 0
+            epoch_loss, epoch_counts, epoch_kld, epoch_mse = 0,0,0,0
+            
+            self.model.train()
+
             for idx, data_dict in enumerate(dataloader):
-            #for idx, (data, weights, samples, sc_weight) in enumerate(dataloader):
                 
+
                 data = data_dict['data']
                 sc_weight = data_dict['scaled_weight']
                 
-                
-                
-                self.model.train()
                 data = data.to(self.device)
                 sc_weight = sc_weight.to(self.device)
                 self.optimizer.zero_grad()
@@ -183,10 +161,10 @@ class Trainer():
                     epoch_kld += (torch.sum(kld)).item()
                 
                 #Multiply the loss by the weights when updating
-                loss = torch.dot(self.config['added_weight_factor']*sc_weight, loss)/num_examples if weight_loss else torch.sum(loss)/num_examples
+                loss = torch.dot(self.config['added_weight_factor']*sc_weight, loss)/num_examples if weight_loss else torch.dot(sc_weight, loss)/num_examples
                 if mse is not None:
-                    mse = torch.dot(self.config['added_weight_factor']*sc_weight, mse)/num_examples if weight_loss else torch.sum(mse)/num_examples
-                    kld = torch.dot(self.config['added_weight_factor']*sc_weight, kld)/num_examples if weight_loss else torch.sum(kld)/num_examples
+                    mse = torch.dot(self.config['added_weight_factor']*sc_weight, mse)/num_examples if weight_loss else torch.dot(sc_weight, loss)/num_examples
+                    kld = torch.dot(self.config['added_weight_factor']*sc_weight, kld)/num_examples if weight_loss else torch.dot(sc_weight, loss)/num_examples
 
                 
                 
@@ -194,8 +172,6 @@ class Trainer():
                 loss.backward()
                 self.optimizer.step()
                 
-                
-                    
             normalised_epoch_loss = epoch_loss/epoch_counts
             normalised_epoch_mse = epoch_mse/epoch_counts
             normalised_epoch_kld = epoch_kld/epoch_counts
@@ -204,7 +180,9 @@ class Trainer():
             epoch_mses.append(normalised_epoch_mse)
             epoch_klds.append(normalised_epoch_kld)
             print(f"Epoch: {epoch}, Loss: {normalised_epoch_loss}, MSE: {normalised_epoch_mse}, KLD: {normalised_epoch_kld}")
-                
+            
+            
+            self.model.eval()
             #And then output a validation loss per sample (per group)
             if val_loader and self.config['val_frequency'] > 0:
                 if epoch % self.config['val_frequency'] == 0:
@@ -212,8 +190,7 @@ class Trainer():
                     val_losses = {}
                     val_counts = {}
 
-                    self.model.eval()
-                    
+            
                     for idx, data_dict in enumerate(val_loader):
                 
                         data = data_dict['data']
@@ -260,35 +237,34 @@ class Trainer():
             l2 = perf_counter()
             print(f"Finished epoch... time taken: {round(l2-l1,2)}s.")
             
-        #TODO:
-        # - add early stopping
-        if not os.path.exists(self.output_dir):
-            os.makedirs(self.output_dir)
-            
+        
+        
         self.save_training()
         
         epoch_axis = [i for i in range(len(epoch_losses))]
-        self.p.plot_scatter(epoch_axis, epoch_losses, xlab='Epoch', ylab='Epoch loss',
+        self.p.plot_loss(epoch_axis, epoch_losses, xlab='Epoch', ylab='Loss',
                    save_name=os.path.join(self.output_dir,'Epoch_losses.png'))
-        self.p.plot_scatter(epoch_axis, epoch_loglosses, xlab='Epoch', ylab='Epoch logloss',
+        self.p.plot_loss(epoch_axis, epoch_loglosses, xlab='Epoch', ylab='Epoch logloss',
                    save_name=os.path.join(self.output_dir,'Epoch_loglosses.png'))
         
-        loss_parts = {'mse' : epoch_mses, 'kld' : epoch_klds, 'Total' : epoch_losses}
-        self.p.plot_scatter_overlay(loss_parts, xlab='Epoch', ylab='Epoch loss',
+        loss_parts = {'MSE loss' : epoch_mses, 'K-L Divergence' : epoch_klds, 'Total' : epoch_losses}
+        self.p.plot_loss_overlay(loss_parts, xlab='Epoch', ylab='Loss',
                               save_name=os.path.join(self.output_dir,'Epoch_losses_Separated.png'),
                                val_frequency=1)
     
         validation_losses['Train'] = epoch_losses
         validation_loglosses['Train'] = epoch_loglosses
-        self.p.plot_scatter_overlay(validation_losses, xlab='Epoch', ylab='Epoch loss',
+        self.p.plot_loss_overlay(validation_losses, xlab='Epoch', ylab='Loss',
                               save_name=os.path.join(self.output_dir,'Epoch_losses_Val.png'),
                                val_frequency=self.config['val_frequency'])
-        self.p.plot_scatter_overlay(validation_loglosses, xlab='Epoch', ylab='Epoch logloss',
+        
+        self.p.plot_loss_overlay(validation_loglosses, xlab='Epoch', ylab='Logloss',
                               save_name=os.path.join(self.output_dir,'Epoch_LogLosses_Val.png'),
                                val_frequency=self.config['val_frequency'])
             
         print(f"Finished training... time taken: {round((l2-s),2)/60}mins.")
         return epoch_losses, epoch_loglosses, validation_losses
+    
     
     def save_training(self):
         
@@ -298,43 +274,27 @@ class Trainer():
         
         
                 
-    def run(self):
+    def run(self, train_loader, val_loader):
         
-        train_loader, val_loader = self.get_dataset()
-        epoch_losses, epoch_loglosses, validation_losses = self.train_vae(train_loader, val_loader)
+
+        epoch_losses, epoch_loglosses, validation_losses = self.train_model(train_loader, val_loader)
         self.save_training()
         print("Finished training.")
         
         
-        self.p.plot_scatter([i for i in range(len(epoch_losses))], epoch_losses, xlab='Epoch', ylab='Epoch loss',
+        self.p.plot_loss([i for i in range(len(epoch_losses))], epoch_losses, xlab='Epoch', ylab='Epoch loss',
                    save_name=os.path.join(self.output_dir,'Epoch_losses.png'))
         
-        self.p.plot_scatter([i for i in range(len(epoch_losses))], epoch_loglosses, xlab='Epoch', ylab='Epoch logloss',
+        self.p.plot_loss([i for i in range(len(epoch_losses))], epoch_loglosses, xlab='Epoch', ylab='Epoch logloss',
                    save_name=os.path.join(self.output_dir,'Epoch_Loglosses.png'))
     
         validation_losses['Train'] = epoch_losses
-        self.p.plot_scatter_overlay(validation_losses, xlab='Epoch', ylab='Epoch loss',
+        self.p.plot_loss_overlay(validation_losses, xlab='Epoch', ylab='Epoch loss',
                               save_name=os.path.join(self.output_dir,'Epoch_losses_Val.png'),
                                val_frequency=self.config['val_frequency'])
         
-    '''    
-    def plot_training_runs(self, epoch_losses, validation_losses):
-        
-        with torch.no_grad():
-            plt.scatter([i+1 for i in range(len(epoch_losses))], epoch_losses, label='Train')
-            #plt.scatter([val_frequency*i for i in range(len(validation_losses))], validation_losses, label='Val')
-            #plot validation per sample
-            for key in validation_losses[0].keys():
-                plt.scatter([val_frequency*i+1 for i in range(len(validation_losses))], [v[key] for v in validation_losses], label=key)
-            plt.xlabel('Epoch')
-            plt.ylabel('Epoch Loss')
-            plt.legend()
-            plt.savefig(os.path.join(self.output_dir, 'Epoch_losses.png'))
-            plt.show()
-    '''
-        
-        
-                
+    
+                    
                 
 if __name__ == '__main__':
     

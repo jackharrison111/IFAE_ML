@@ -144,7 +144,7 @@ class Tester():
                 
         
         #Overlay background and signal
-        if kwargs.get('logloss_BkgvsSig_hist',False):
+        if kwargs.get('logloss_BkgvsSig_hist',False) and sig_output:
             if len(per_sample_counts) == 0:
                 for group, samples in self.config['groupings'].items():
                     index = np.where(np.isin(bkg_output['samples'],samples))
@@ -162,16 +162,14 @@ class Tester():
             p.plot_hist_stack(per_sample_edges+[sig_edges], per_sample_counts+[sig_counts],
                              labels=per_sample_names+['VLLs'], xlab='Log loss', ylab='Counts',
                             save_name=os.path.join(self.out_dir,'Logloss_bySampleNormalised_VLL.png'))
-                             
-
-        
+            
         
         #Overlay bkg and signal per sample
         
         norm_test_logloss_c = test_logloss_counts/np.sum(test_logloss_counts)
         
         #Calculate separation + make plot
-        if kwargs.get('chi2_plots', False) and sig_output is not None:
+        if kwargs.get('chi2_plots', False) and sig_output:
             
             separation_samples = ['Esinglet150', 'Esinglet300', 'Mdoublet700']
             histos = []
@@ -217,7 +215,7 @@ class Tester():
             
             
         #Plot Nsig vs Nbackground curves and SAVE outputs
-        if kwargs.get('nsig_vs_nbkg', False):
+        if kwargs.get('nsig_vs_nbkg', False) and sig_output:
             
             cumsum_hists = []
             loss_count_hists = []
@@ -251,6 +249,30 @@ class Tester():
                                save_name=os.path.join(self.out_dir, 'SigvsBkg_curves.png'))
             
             
+            if kwargs.get('trexfitter_plot', False) and sig_output:
+                
+                sample_cs = []
+                sample_es = []
+                sample_ns = []
+               
+                for group, samples in self.config['groupings'].items():
+                    index = np.where(np.isin(bkg_output['samples'],samples))
+                    weights = bkg_output['weights'][index]
+                    c, e = np.histogram(bkg_output['log_losses'][index], bins=logloss_bins,
+                                                weights=weights)
+                    sample_cs.append(c)
+                    sample_es.append(e)
+                    sample_ns.append(group)
+            
+                
+                sig_weights = sig_output['weights']
+                sig_counts, sig_edges = np.histogram(sig_output['log_losses'], bins=logloss_bins,
+                                                    weights=sig_weights)
+
+                p.plot_bar_stack(sample_es+[sig_edges], sample_cs+[sig_counts],
+                                 labels=sample_ns+['VLLs'], xlab='Log loss', ylab='Counts',
+                                save_name=os.path.join(self.out_dir,'Logloss_bySample.png'))
+            
         ...
         
         
@@ -271,8 +293,8 @@ if __name__ == '__main__':
     from preprocessing.dataset import data_set
     from torch.utils.data import DataLoader
     
-    train_conf = 'configs/training_config.yaml'
-    vll_conf = 'configs/VLL_VAE_config.yaml'
+    train_conf = 'configs/training_configs/training_config.yaml'
+    vll_conf = 'configs/training_configs/VLL_VAE_config.yaml'
     
     #NEED TO UPDATE THIS TO BE ABLE TO TEST A TRAINED MODEL EASILY
     t = Tester(config=train_conf)
@@ -280,9 +302,15 @@ if __name__ == '__main__':
     #Load a model
     #even_load_dir = "outputs/EVEN_FINAL_VAE_1318-23-09-2022"
     #odd_load_dir = "outputs/ODD_FINAL_VAE_1414-23-09-2022"
-    even_load_dir = "outputs/LongRun_VAE_1Z_0b_2SFOS_10GeV/Run_1626-23-12-2022"
     
-    out_dir =  'outputs/eval_10GeV_training'
+    path10 = 'outputs/good_runs/LongRun_VAE_1Z_0b_2SFOS_10GeV/Run_1507-22-12-2022_B'
+    path25 = 'outputs/good_runs/LongRun_VAE_1Z_0b_2SFOS_25GeV/Run_1402-17-01-2023'
+    
+    
+    #even_load_dir = "outputs/LongRun_VAE_1Z_0b_2SFOS_10GeV/Run_1626-23-12-2022"
+    even_load_dir = path10
+    
+    out_dir =  'outputs/good_runs/eval_25GeV_training'
     
     load = False
     save = True
@@ -301,23 +329,33 @@ if __name__ == '__main__':
             sig_output = pickle.load(f)
         
     else:
-        trainer = Trainer(model, config=train_conf) #Set use even here, and then test is the odd data
-        train, odd_data = trainer.get_dataset()
+        
+        #Get the even dataset and signal dataset
+        
+        dh = DatasetHandler(train_conf)
+        train, val, test = dh.split_dataset(val=dh.config['validation_set'], 
+                    use_eventnumber=dh.config.get('use_eventnumber',None))
 
-        sig_dh  =  DatasetHandler(vll_conf, scalers=trainer.dh.scalers)
+        train_data = data_set(train)
+        test_data = data_set(test)
+        train_loader = DataLoader(train_data, batch_size=dh.config['batch_size'], shuffle=True)    
+        test_loader = DataLoader(test_data, batch_size=1)
+        
+        
+        sig_dh  =  DatasetHandler(vll_conf, scalers=dh.scalers)
         sig_data = data_set(sig_dh.data)
         sig_loader = DataLoader(sig_data, batch_size=1, shuffle=True)
     
         #Evaluate bkg+signal
         #Just use even model to evaluate on odd bkg data
-        bkg_output = t.evaluate_vae(model, odd_data)
+        bkg_output = t.evaluate_vae(model, test_loader)
         sig_output = t.evaluate_vae(model, sig_loader)
     
   
     if save:
-        with open(os.path.join(out_dir, 'odd_bkg_data.pkl'), 'wb') as f:
+        with open(os.path.join(out_dir, 'saved_outputs.pkl'), 'wb') as f:
             pickle.dump(bkg_output, f)
-        with open(os.path.join(out_dir, 'sig_data.pkl'), 'wb') as f:
+        with open(os.path.join(out_dir, 'saved_signal_outputs.pkl'), 'wb') as f:
             pickle.dump(sig_output, f)
         
 

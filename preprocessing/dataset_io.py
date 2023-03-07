@@ -17,6 +17,9 @@ import pickle
 import yaml
 import os
 
+#Utils
+from utils._utils import load_yaml_config, make_output_folder
+
 #Scaling includes
 from sklearn.preprocessing import StandardScaler
 
@@ -29,19 +32,29 @@ class DatasetHandler():
     
     def __init__(self, dataset_config=None, scalers=None):
         
-        if type(dataset_config) == str:
-            with open(dataset_config, 'r') as f:
-                self.config = yaml.safe_load(f)
-        else:
-            self.config = dataset_config
-            
-        self.data_path = os.path.join(self.config['samples_path'], self.config['feather_file'])
         
-        self.get_dataset(self.data_path, chosen_samples=self.config.get('chosen_samples',None))
-        self.calculate_mcweight()
-        self.reduce_to_training_variables(self.config['training_variables'])
-        self.clean_dataset()
-        self.scale_variables(scalers=scalers)
+        self.config = load_yaml_config(dataset_config)
+
+        self.output_dir = make_output_folder(self.config, root_loc=os.path.join('results',self.config['out_folder']))
+        
+        self.data_path = os.path.join(self.config['samples_path'], self.config['feather_file'])
+        chosen_samples = self.config.get('chosen_samples', None)
+        
+        if scalers:
+            self.data_path = os.path.join(self.config['samples_path'], self.config['signal_file'])
+            chosen_samples = self.config.get('signal_samples',None)
+        
+        self.get_dataset(self.data_path, chosen_samples=chosen_samples)
+        
+        if len(self.data)!= 0:
+            self.calculate_mcweight()
+            self.reduce_to_training_variables(self.config['training_variables'])
+            self.clean_dataset(
+                r_negative=self.config['remove_negative_weights'],
+                r_zero=self.config['remove_zero_weights'])
+            self.scale_variables(scalers=scalers)
+        else:
+            self.data = []
         
         
     def get_dataset(self, infile, chosen_samples=None):
@@ -55,15 +68,37 @@ class DatasetHandler():
         
         
     #Function to calculate the MC weights from input datagframe
-    def calculate_mcweight(self):
+    def calculate_mcweight(self, total_lum=138965.16):
 
-        total_lum = 138965.16
-        self.data.loc[self.data['RunYear'].isin([2015,2016]), 'lumi_scale'] = 36207.66*(1/total_lum)
-        self.data.loc[self.data['RunYear'].isin([2017]), 'lumi_scale'] = 44307.4*(1/total_lum)
-        self.data.loc[self.data['RunYear'].isin([2018]), 'lumi_scale'] = 58450.1*(1/total_lum)
-
-        self.data['weight'] = self.data['lumi_scale']*self.data['custTrigSF_TightElMediumMuID_FCLooseIso_DLT']*self.data['weight_pileup']*self.data['jvtSF_customOR']*self.data['bTagSF_weight_DL1r_77']*self.data['weight_mc']*self.data['xs']*self.data['lep_SF_CombinedLoose_0']*self.data['lep_SF_CombinedLoose_1']*self.data['lep_SF_CombinedLoose_2']*self.data['lep_SF_CombinedLoose_3']/self.data['totalEventsWeighted']
+        if len(self.data) == 0:
+            return None
         
+        if self.config['mc_weight_choice'] == 'VLL_production':
+            
+            self.data.loc[self.data['RunYear'].isin([2015,2016]), 'lumi_scale'] = 36207.66*(1/total_lum)
+            self.data.loc[self.data['RunYear'].isin([2017]), 'lumi_scale'] = 44307.4*(1/total_lum)
+            self.data.loc[self.data['RunYear'].isin([2018]), 'lumi_scale'] = 58450.1*(1/total_lum)
+
+            for i in range(4):
+                self.data.loc[self.data[f"lep_ID_{i}"]==0,f"lep_SF_{i}"] = 1
+                self.data.loc[~self.data[f"lep_ID_{i}"].isin([13,-13]), f"lep_SF_{i}"] = self.data[f"lep_SF_CombinedLoose_{i}"]
+                self.data.loc[self.data[f"lep_ID_{i}"].isin([13,-13]), f"lep_SF_{i}"] = self.data[f"lep_SF_Mu_TTVA_AT_{i}"]*self.data[f"lep_SF_Mu_ID_Loose_AT_{i}"]
+            
+            
+            self.data['weight'] = self.data['lumi_scale']*self.data['custTrigSF_LooseID_FCLooseIso_DLT']*self.data['weight_pileup']*self.data['jvtSF_customOR']*self.data['bTagSF_weight_DL1r_Continuous']*self.data['weight_mc']*self.data['xs']*self.data['lep_SF_0']*self.data['lep_SF_1']*self.data['lep_SF_2']*self.data['lep_SF_3']/self.data['totalEventsWeighted']
+
+            
+            
+        else:
+            
+            self.data.loc[self.data['RunYear'].isin([2015,2016]), 'lumi_scale'] = 36207.66*(1/total_lum)
+            self.data.loc[self.data['RunYear'].isin([2017]), 'lumi_scale'] = 44307.4*(1/total_lum)
+            self.data.loc[self.data['RunYear'].isin([2018]), 'lumi_scale'] = 58450.1*(1/total_lum)
+
+            self.data['weight'] = self.data['lumi_scale']*self.data['custTrigSF_TightElMediumMuID_FCLooseIso_DLT']*self.data['weight_pileup']*self.data['jvtSF_customOR']*self.data['bTagSF_weight_DL1r_77']*self.data['weight_mc']*self.data['xs']*self.data['lep_SF_CombinedLoose_0']*self.data['lep_SF_CombinedLoose_1']*self.data['lep_SF_CombinedLoose_2']*self.data['lep_SF_CombinedLoose_3']/self.data['totalEventsWeighted']
+
+            
+            
         #Need to multiply by total_lum
         self.data['weight'] = self.data['weight']*total_lum
 
@@ -88,8 +123,6 @@ class DatasetHandler():
             self.data = self.data.drop_duplicates()
             print(f"Removing duplicates: {before} -> {len(self.data)}")
             
-        #TODO: 
-        #include dropping nans
          
     
     def scale_variables(self, scalers=None):
@@ -106,6 +139,7 @@ class DatasetHandler():
             
             if col == 'weight':
                 #Adjust the weights to be centered on 1 #normalise
+                #TODO - decide what to do with 
                 self.data.loc[:,'scaled_weight'] = self.data.loc[:,col]/self.data[col].sum()
                 continue
 
@@ -119,6 +153,8 @@ class DatasetHandler():
                 self.data.loc[:, col] = scaler.transform(np.array(self.data[col]).reshape(len(self.data[col]),1))
             print(f"Scaled {col} to mean: {self.data[col].mean()}")
             self.scalers[col] = scaler
+        
+        self.save_scalers(self.output_dir)
             
     
     def save_scalers(self, output_dir):
@@ -132,8 +168,9 @@ class DatasetHandler():
             pickle.dump(sc, open(os.path.join(scaler_folder,col+'_scaler.pkl'),'wb'))
             
             
-    def split_per_sample(self, val=False, use_eventnumber=False):
+    def split_dataset(self, use_val=False, use_eventnumber=False):
         
+        val = []
         if use_eventnumber:
             print("Splitting dataset by event number.")
             if self.config['even_or_odd'] == 'Even':
@@ -144,39 +181,48 @@ class DatasetHandler():
                 print("Using odd.")
                 train = self.data.loc[self.data['eventNumber'] % 2 == 1]
                 test = self.data.loc[self.data['eventNumber'] % 2 == 0]
-            print(f"Train size: {len(train)}, Test size: {len(test)}")
-            return train, test
-        
-        self.test_data = pd.DataFrame()
-        print("Length of dataset: ", len(self.data))
-        
-        if val:
-            fraction = self.config['validation_fraction']
-        else:
-            fraction = self.config['test_fraction']
             
-        for sample in list(self.data['sample'].unique()):
-            sample_data = self.data.loc[self.data['sample'] == sample]
-            if len(sample_data) == 0:
-                continue
-           
-            if len(sample_data ) * fraction < 1:
-                continue
-           
-            if len(sample_data) == 1:
-                self.test_data = pd.concat([self.test_data, sample_data])
-                self.data.drop(index=sample_data.index.values, axis=0, inplace=True)
-                print(f"Found sample: {sample} with 1 example.")
-                continue
+            #Sample 20% for the validation
+            if use_val:
+                train, val = train_test_split(train, test_size=self.config['validation_fraction'])
                 
-            train, test = train_test_split(sample_data, test_size=fraction)
-            
-            self.test_data = pd.concat([self.test_data, test])
-            self.data.drop(index=test.index.values, axis=0, inplace=True)
-            
-            #TODO:
-            # - add this into verbose mode
-            print(f"Split {sample} by removing {len(test)} events.")
+            print(f"Train size: {len(train)}, Val size: {len(val)}, Test size: {len(test)}")
+            return train, val, test
         
-        print(f"Total removed: {len(self.test_data)}, Remaining length: {len(self.data)}")
-        return self.data, self.test_data
+        #--------------------------------------------------
+        else:
+            #TODO: Remove or alter this
+            
+            self.test_data = pd.DataFrame()
+            print("Length of dataset: ", len(self.data))
+
+            if val:
+                fraction = self.config['validation_fraction']
+            else:
+                fraction = self.config['test_fraction']
+
+            for sample in list(self.data['sample'].unique()):
+                sample_data = self.data.loc[self.data['sample'] == sample]
+                if len(sample_data) == 0:
+                    continue
+
+                if len(sample_data ) * fraction < 1:
+                    continue
+
+                if len(sample_data) == 1:
+                    self.test_data = pd.concat([self.test_data, sample_data])
+                    self.data.drop(index=sample_data.index.values, axis=0, inplace=True)
+                    print(f"Found sample: {sample} with 1 example.")
+                    continue
+
+                train, test = train_test_split(sample_data, test_size=fraction)
+
+                self.test_data = pd.concat([self.test_data, test])
+                self.data.drop(index=test.index.values, axis=0, inplace=True)
+
+                #TODO:
+                # - add this into verbose mode
+                print(f"Split {sample} by removing {len(test)} events.")
+
+            print(f"Total removed: {len(self.test_data)}, Remaining length: {len(self.data)}")
+            return self.data, self.test_data

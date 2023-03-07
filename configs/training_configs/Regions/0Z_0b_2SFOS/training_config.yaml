@@ -1,0 +1,115 @@
+
+#Metadata
+Region_name: '0Z_0b_2SFOS'
+out_folder: '0Z_0b_2SFOS_FirstRun'
+
+
+#Samples
+samples_path: '/data/at3/scratch3/multilepton/VLL_production/feather'
+feather_file : '0Z_0b_2SFOS_10GeV.ftr'
+signal_file: '0Z_0b_2SFOS_VLLs_10GeV.ftr'
+
+
+
+#Outputting to ntuple
+add_to_ntuple: False
+
+base_dir: '/data/at3/scratch3/jharrison/nominal/'
+out_dir: '/data/at3/scratch3/jharrison/mod_ntuples_newvars/'
+vll_base_dir: '/data/at3/scratch3/jharrison/VLL'
+vll_out_dir: '/data/at3/scratch3/jharrison/mod_VLL'
+
+
+#Set training hyperparameters
+Train : True
+train_size: -1
+batch_size : 512
+learning_rate : 0.1 #AE
+num_epochs : 2000
+optimizer: 'SGD'
+test_dump : False
+use_eventnumber: True
+even_or_odd : 'Even'
+beta: 1
+load_path : 'outputs/VAE_1943-16-08-2022/model_state_dict.pt'
+
+
+#Preprocessing settings
+mc_weight_choice: 'VLL_production'
+remove_zero_weights : True
+remove_negative_weights : False
+weight_loss : True
+added_weight_factor : 500
+
+#Model setup
+model_type : 'AE'
+enc_layers: [8,6,4]
+dec_layer: [8,6,4]
+act_func: 
+z_dim: 2
+
+#Test settings
+validation_set: True
+validation_groups : ['VV', 'Top', 'VH', 'VVV']
+validation_fraction : 0.2
+test_fraction : 0.2
+val_frequency : 20
+num_test_samples : -1
+evaluate_signals : True
+
+
+#Set training variables
+training_variables:     ['met_met',
+    'Mllll0123',
+    'HT_lep',
+    'HT_jets',
+    'nJets_OR',
+    'weight',
+    'sample',
+    'eventNumber',
+    'best_mZll',
+    'other_mZll',
+    'M3l_high',
+    'M3l_low',
+    'best_ptZll',
+    'other_ptZll'
+]
+
+ 
+#Set the samples used
+chosen_samples : [
+    'singleTopschan',
+    'singleToptchan',
+    'tW',
+    'Zjets',
+    'Wjets',
+    'Vgamma',
+    'ttW2210EW',
+    'ttH',
+    'ttZMadNew',
+    'ttlllowMass',
+    'rareTop',
+    'VV',
+    'ggVV',
+    'VVlow',
+    'threeTop',
+    'fourTop',
+    'ttWW',
+    'tZ',
+    'WtZ',
+    'VVV',
+    'VHalt',
+    'tHjb',
+    'ttbarnonallhad',
+    'ttZZ',
+    'ttWH',
+    'ttHH']
+
+
+#Set the groupings
+groupings:
+   VV:  ['ggVV','VV','VVlow']
+   VVV: ['VVV']
+   VH : ['VHalt']
+   Top: ['ttZMadNew', 'ttlllowMass', 'fourTop', 'ttWW','ttH','WtZ']
+   Other: ['singleTopschan','singleToptchan','tW','Zjets','Wjets','Vgamma','ttW2210EW','rareTop','threeTop','tZ','tHjb','ttbarnonallhad','ttZZ','ttWH','ttHH']

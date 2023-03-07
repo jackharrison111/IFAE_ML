@@ -1,0 +1,46 @@
+#Set the input config files
+region: '1Z_0b_1SFOS'
+region_save_name : '1Z_0b_1SFOS_VLLs_10GeV'
+
+#Bkg configs:
+variables_file : 'VLL4321_variables.txt'
+samples_file : 'VLL4321_samples.txt'
+json_output : 'VLL4321_samples.json'
+nominal_path : "/data/at3/scratch3/multilepton/VLL_production/nominal"
+feather_path : "/data/at3/scratch3/multilepton/VLL_production/feather/VLLs"
+
+#Data configs:
+#variables_file : 'configs/Data_variables.txt'
+#samples_file : 'configs/Data_samples.txt'
+#json_output : 'configs/Data_samples.json'
+#feather_path : "/data/at3/scratch3/jharrison/nominal_feather/Regions/CR_0Z_0b_2SFOS"
+#nominal_path : "/data/at3/scratch3/jharrison/nominal/data"
+#nominal_path : "/data/at3/scratch3/multilepton/newvars/data"
+
+#VLL configs:
+#variables_file: 'configs/variable_choices/VLL_variables.txt'
+#samples_file : 'configs/sample_choices/VLL_samples.txt'
+#json_output : 'configs/sample_jsons/VLL_samples.json'
+#feather_path : "/data/at3/scratch3/jharrison/nominal_feather/Regions/CR_1Z_0b_2SFOS"
+#nominal_path : "/data/at3/scratch3/jharrison/VLL/"
+#region_name : 'CR_0Z_0b_2SFOS_VLLs_newstring'
+#region_name : 'test_region'
+
+
+cut_choice : 'cut_1Z_0b_1SFOS_remade'
+variable_functions_choice: '1Z_0b_1SFOS_funcs'
+
+0Z_0b_0SFOS_funcs: ['find_bestZll_pair', 'calc_4lep_mZll', 'calc_4lep_pTll', 'calc_m3l']
+0Z_0b_1SFOS_funcs: ['find_Z_pairs_0Z_1SFOS', 'calc_4lep_pTll', 'calc_m3l']
+0Z_0b_2SFOS_funcs: ['find_pairings_0Z_2SFOS', 'calc_4lep_pTll', 'calc_m3l']
+1Z_0b_1SFOS_funcs: ['find_Z_pairs_1Z_1SFOS', 'calc_4lep_pTll', 'calc_m3l']
+1Z_0b_2SFOS_funcs: ['find_Z_pairs_1Z', 'calc_4lep_pTll', 'calc_m3l']
+2Z_0b_funcs: ['find_Z_pairs_2Z', 'calc_4lep_pTll', 'calc_m3l']
+
+
+
+cut_1Z_0b_1SFOS_remade: '(quadlep_type>0) & (total_charge==0) & (nTaus_OR==0) & (nJets_OR_DL1r_77==0)  & (lep_Pt_0*1e-3>10) & (lep_Pt_1*1e-3>10) & (lep_Pt_2*1e-3>10) & (lep_Pt_3*1e-3>10) & (lep_isolationFCLoose_0) & (lep_isolationFCLoose_1) & (lep_isolationFCLoose_2) & (lep_isolationFCLoose_3) & ( ((lep_ID_0==-lep_ID_1)&(abs(Mll01-91.2e3)<10e3)&(Mll01*1e-3>12)&(lep_ID_2!=-lep_ID_3) ) | ((lep_ID_0==-lep_ID_2)&(abs(Mll02-91.2e3)<10e3)&(Mll02*1e-3>12)&(lep_ID_1!=-lep_ID_3) ) | ((lep_ID_0==-lep_ID_3)&(abs(Mll03-91.2e3)<10e3)&(Mll03*1e-3>12)&(lep_ID_1!=-lep_ID_2) ) | ((lep_ID_1==-lep_ID_2)&(abs(Mll12-91.2e3)<10e3)&(Mll12*1e-3>12)&(lep_ID_0!=-lep_ID_3) ) | ((lep_ID_1==-lep_ID_3)&(abs(Mll13-91.2e3)<10e3)&(Mll13*1e-3>12)&(lep_ID_0!=-lep_ID_2) ) | ((lep_ID_2==-lep_ID_3)&(abs(Mll23-91.2e3)<10e3)&(Mll23*1e-3>12)&(lep_ID_0!=-lep_ID_1)) )'
+
+
+
+#-----------------------------------------------------------------------------------------------------

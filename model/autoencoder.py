@@ -14,13 +14,12 @@ import torch.nn.functional as F
 #Class to store the encoder 
 class Encoder(nn.Module):
     
-    def __init__(self, dimensions, latent_dim, variational=False):
+    def __init__(self, dimensions, latent_dim, variational=False, func='Tanh'):
         
         super().__init__()
         layers = []
         self.variational = variational
-        #func = 'LeakyReLU' 
-        func = 'Tanh'
+        
         for i, dim in enumerate(dimensions):
             
             if dim == dimensions[-1]:
@@ -65,13 +64,10 @@ class Encoder(nn.Module):
 #Class to store the decoder
 class Decoder(nn.Module):
     
-    def __init__(self, dimensions, latent_dim):
+    def __init__(self, dimensions, latent_dim, func='Tanh'):
         super().__init__()
         
         layers = []
-        
-        #func = 'LeakyReLU'
-        func = 'Tanh'
         layers.append(
             nn.Sequential(
                     nn.Linear(latent_dim, dimensions[0]),
@@ -103,7 +99,6 @@ class Decoder(nn.Module):
         func_choice = 'Tanh'
         func = getattr(nn, func_choice)()
         prediction = self.decoder(data)
-        #return func(prediction)
         return prediction
         
         

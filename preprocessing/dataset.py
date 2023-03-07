@@ -9,9 +9,13 @@ class data_set(Dataset):
     def __init__(self, df):
         
         extra_cols = ['weight', 'scaled_weight', 'sample', 'eventNumber', 'label']
-        self.format_dataset(df, extra_cols)    
-        self.data = torch.tensor(df.values, dtype=torch.float32)
-        
+        if df is None:
+            self.data = None
+        elif len(df) != 0:
+            self.format_dataset(df, extra_cols)    
+            self.data = torch.tensor(df.values, dtype=torch.float32)
+        else:
+            self.data = None
 
     def format_dataset(self, df, cols):
         
@@ -24,15 +28,14 @@ class data_set(Dataset):
                     setattr(self, col, df[col])
                 df.drop(col, axis=1, inplace=True)
 
+                
     def __len__(self):
         return len(self.data)
   
 
     def __getitem__(self, index):
         
-        #TODO:
-        #Return this as a dictionary ? See if possible
-        #Torch tensors
+        #TODO: Check if this is slow
         data = self.data[index] if self.data is not None else None
         weight = self.weight[index] if self.weight is not None else None
         sc_weight = self.scaled_weight[index] if self.scaled_weight is not None else None
@@ -51,13 +54,7 @@ class data_set(Dataset):
             'label' : label,
             'eventNumber' : eventNumber
         }
-        #print(output_dict)
+        #Could try taking a list of names and then doing get item and append to output list 
         
         return output_dict
-        '''
-        #weights =  self.weights[index] if self.weights!=None else None
-        #samples =  [] if self.samples == None else self.samples[index]
-        #TODO: ADD CHECKING FOR IF NO WEIGHTS OR SAMPLES ARE PASSED
-        sc_weight = self.scaled_weights[index] if self.scaled_weights != None else None
-        return self.data[index], self.weights[index], self.samples.iloc[index], sc_weight
-        '''
+    

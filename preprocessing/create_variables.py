@@ -39,6 +39,9 @@ class VariableMaker():
         cols+= ['best_Zllpair','other_Zllpair','best_mZll','other_mZll']
         
         mll_columns = list(pairings.keys())
+        if len(df) == 0:
+            return df
+        
         for i in range(len(df)):
             best_pair = None
             best_mass = None
@@ -294,6 +297,9 @@ class VariableMaker():
     #Function for finding bestZll in 1Z, 0b, 2SFOS
     def find_bestZll_pair(self, df):
         
+        if len(df) == 0:
+            return df
+        
         pairings=  {
             'Mll01' : 'Mll23', 
             'Mll02':'Mll13',
@@ -310,6 +316,9 @@ class VariableMaker():
     
     
     def calc_4lep_mZll(self, df):
+        
+        if len(df) == 0:
+            return df
     
         df['best_mZll'] = [df.loc[i,col] for i, col in enumerate(df['best_Zllpair'])]
         df['other_mZll'] = [df.loc[i,col] for i, col in enumerate(df['other_Zllpair'])]
@@ -318,6 +327,9 @@ class VariableMaker():
     
     
     def calc_4lep_pTll(self, df):
+        
+        if len(df) == 0:
+            return df
         
         best_worst = {'best_Zllpair' : 'best_ptZll',
                     'other_Zllpair': 'other_ptZll'}
@@ -342,6 +354,9 @@ class VariableMaker():
     
     
     def calc_m3l(self, df):
+        
+        if len(df) == 0:
+            return df
         
         df['l0'] = df['best_Zllpair'].str[-2]
         df['l1'] = df['best_Zllpair'].str[-1]

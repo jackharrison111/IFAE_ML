@@ -1,16 +1,19 @@
 from model.autoencoder import VAE, AE
 import yaml
+from utils._utils import load_yaml_config
 
 def get_model(conf="configs/training_config.yaml"):
     
-    with open(conf,'r') as f:
-        conf = yaml.safe_load(f)
+    
+    conf = load_yaml_config(conf)
     
     useful_columns = [col for col in conf['training_variables'] if col not in ['sample','weight', 'scaled_weight', 'eventNumber']]
-    enc_dim = [len(useful_columns),8]
-    dec_dim = [8,len(useful_columns)]
+    inp_dim = len(useful_columns)
     
-    z_dim = 4
+    
+    enc_dim = [inp_dim]+conf['enc_layers']
+    dec_dim = conf['dec_layer']+[inp_dim]
+    z_dim = conf['z_dim']
     
     model_type = conf['model_type']
     if model_type == 'AE':

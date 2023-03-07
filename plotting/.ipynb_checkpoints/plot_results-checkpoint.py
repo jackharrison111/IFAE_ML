@@ -8,18 +8,22 @@ class Plotter():
         ...
         
         
-    def plot_scatter(self, x, y, xlab=None, ylab=None,title=None,label=None,save_name=None):
-        plt.scatter(x,y,label=label)
+    def plot_loss(self, x, y, xlab=None, ylab=None,title=None,label=None,save_name=None):
+        hfont = {'fontname':'Helvetica'}
+        
+        plt.plot(x,y,label=label)
         plt.xlabel(xlab)
         plt.ylabel(ylab)
         plt.legend()
+        plt.grid(True)
+        
         plt.title(title)
         if save_name:
             plt.savefig(save_name)
         plt.close()
         
         
-    def plot_scatter_overlay(self, x_list, y_list=None, xlab=None, ylab=None,title=None,labels=None,
+    def plot_loss_overlay(self, x_list, y_list=None, xlab=None, ylab=None,title=None,labels=None,
                              save_name=None, val_frequency=1):
         
         if type(x_list) == dict:
@@ -27,12 +31,14 @@ class Plotter():
                 freq=val_frequency
                 if key == 'Train':
                     freq=1
-                plt.scatter([i*freq for i in range(len(val))], val, label=key)
+                print(f"Plotting {key} using freq {freq}, length: {len(val)}")
+                plt.plot([i*freq for i in range(len(val))], val, label=key)
         else:
             for i, (x, y) in enumerate(zip(x_list, y_list)):
-                plt.scatter(x, y, label=labels[i])
+                plt.plot(x, y, label=labels[i])
         plt.xlabel(xlab)
         plt.ylabel(ylab)
+        plt.grid(True)
         plt.legend()
         plt.title(title)
         if save_name:
@@ -125,6 +131,21 @@ class Plotter():
             plt.savefig(save_name)
         plt.close()
         ...
+    
+    def plot_bar_stack(self, edge_list, count_list, xlab=None, ylab=None, title=None,
+                       labels=None, save_name=None):
+        
+        for i, (edge,count) in enumerate(zip(edge_list,count_list)):
+            plt.bar(edge[:-1], count, label=labels[i], alpha=1)
+        plt.xlabel(xlab)
+        plt.ylabel(ylab)
+        plt.title(title)
+        plt.legend()
+        plt.grid(True)
+        if save_name:
+            plt.savefig(save_name)
+        plt.close()
+    
         
     
 if __name__ == '__main__':
