@@ -20,6 +20,8 @@ if __name__ == '__main__':
                         default="configs/training_config.yaml", required=False)
     parser.add_argument("-r","--Region",action="store", help="Set the region to config use, default is to use the config", 
                         default=None, required=False, type=str)
+    parser.add_argument("-j","--JobName",action="store", help="Set the job name, for outputting to a given folder", 
+                        default=None, required=False, type=str)
     
     args = parser.parse_args()
     conf = args.inputConfig
@@ -37,16 +39,14 @@ if __name__ == '__main__':
     
     #Get the dataset
     #Make input variable plots ? 
-    #Get signal and bkg? 
-    dh = DatasetHandler(conf)
+    #Get signal and bkg?
+    dh = DatasetHandler(conf, job_name=args.JobName)
     train, val, test = dh.split_dataset(use_val=dh.config['validation_set'], 
                 use_eventnumber=dh.config.get('use_eventnumber',None))
     
     
     
     #TODO: Add plotting of input variables here?
-    
-    
     
     train_data = data_set(train)
     test_data = data_set(test)
@@ -60,12 +60,9 @@ if __name__ == '__main__':
         val_loader=None
     
     
-    
-    
     #Train the model
     t = Trainer(model, config=conf, output_dir=dh.output_dir)
     epoch_loss,epoch_logloss, val_loss = t.train_model(train_loader, val_loader=val_loader)
-    
     
     
     #Test the model
@@ -74,8 +71,6 @@ if __name__ == '__main__':
     output = tester.evaluate_vae(t.model, test_loader)
     
     
-    
-
     #------------------------------------------------------------------------
     # Format the output
     #------------------------------------------------------------------------
@@ -124,6 +119,7 @@ if __name__ == '__main__':
     }
     
     tester.analyse_results(output, sig_output=sig_output, **outplots)
+    
     
     
     # Add back into ntuples

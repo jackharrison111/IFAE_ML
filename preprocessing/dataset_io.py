@@ -11,6 +11,7 @@ Functions include:
 Jack Harrison 23/08/2022
 '''
 
+
 import pandas as pd
 import numpy as np
 import pickle
@@ -30,12 +31,13 @@ from sklearn.model_selection import train_test_split
 
 class DatasetHandler():
     
-    def __init__(self, dataset_config=None, scalers=None):
+    def __init__(self, dataset_config=None, scalers=None, job_name=None):
         
         
         self.config = load_yaml_config(dataset_config)
 
-        self.output_dir = make_output_folder(self.config, root_loc=os.path.join('results',self.config['out_folder']))
+        root = os.path.join('results', job_name) if job_name is not None else os.path.join('results',self.config['out_folder'])
+        self.output_dir = make_output_folder(self.config, root_loc=root)
         
         self.data_path = os.path.join(self.config['samples_path'], self.config['feather_file'])
         chosen_samples = self.config.get('chosen_samples', None)

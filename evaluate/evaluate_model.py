@@ -51,6 +51,7 @@ if __name__ == '__main__':
                         default=-1, required=False, type=int)
     args = parser.parse_args()
     
+    
     #EVEN means TRAINED on even, and so we want even model to evaluate on ODD data
     even_load_dir = args.evenModelPath
     odd_load_dir = args.oddModelPath
@@ -63,26 +64,20 @@ if __name__ == '__main__':
     #even_load_dir = 'outputs/good_runs/LongRun_VAE_1Z_0b_2SFOS_25GeV/Run_1402-17-01-2023'
     #odd_load_dir = even_load_dir
     
-    
     #region = '1Z_1b_2SFOS'
     #even_load_dir = 'results/1Z_1b_2SFOS_FirstRun/Run_1252-24-02-2023'
     #odd_load_dir = 'results/1Z_1b_2SFOS_OddRun/Run_1609-24-02-2023'
     
-    featherconfig = os.path.join('configs/feather_configs/10GeV',f"{region}.yaml")
+    train_conf = os.path.join(even_load_dir, 'config.yaml')
+    train_conf = load_yaml_config(train_conf)
     
+    featherconfig = os.path.join('configs/feather_configs/10GeV',f"{region}.yaml")
     feather_conf = load_yaml_config(featherconfig)
+    
     cut_expr = feather_conf[feather_conf['cut_choice']]
     
     
-    
-    train_conf = args.inputConfig
-    train_conf = os.path.join(even_load_dir, 'config.yaml')
-    
-    #Read from args
-    train_conf = load_yaml_config(train_conf)
-    
-    
-    
+   
     #SWITCH THE WEIGHTS AROUND
     even_model = get_model(conf=train_conf)
     even_model.load_state_dict(torch.load(os.path.join(odd_load_dir,'model_state_dict.pt')))
@@ -99,14 +94,7 @@ if __name__ == '__main__':
     fm = FeatherMaker(master_config=feather_conf)
     variables = fm.get_features()
     
-    #Get the used DSIDS:
-    with open(os.path.join(f"configs/sample_jsons/{fm.master_config['region']}/{fm.master_config['json_output']}")) as f:
-        sample_map = json.load(f)
     
-    all_dsids = []
-    #for sample in config['chosen_samples']:
-    #    all_dsids += sample_map[f'XXX_{sample}_samples']
-        
     
     for i, file in enumerate(all_root_files):
         
@@ -115,8 +103,8 @@ if __name__ == '__main__':
         if i > last and last!=-1:
             break
         
-        
         print(f"Running file {file}. {i} / {len(all_root_files)}")
+        
         
         save_path = file.split(os.path.basename(train_conf['ntuple_path']))[1]
         
@@ -131,9 +119,7 @@ if __name__ == '__main__':
         
         
         
-        #CHECK IF DSID IS IN THE TRAINING SAMPLES
-        dsid = os.path.split(save_path)[1]
-       
+        #Switch this to using RDataFrames?
         
         out_data = []
         with uproot.open(file+':nominal') as f:
