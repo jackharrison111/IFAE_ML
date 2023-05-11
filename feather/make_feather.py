@@ -34,6 +34,7 @@ class FeatherMaker():
         with open(infile, 'r') as file:
             vars = file.readlines()
             vars = [v.rstrip() for v in vars if v[0] != '#']
+        vars = list(set(vars))
         return vars
 
 
@@ -65,7 +66,8 @@ class FeatherMaker():
             sample_list = line.split(':')[-1]
             sample_name = line.split(':')[0]
             if sample_name[0]=='#':
-                sample_name = sample_name[1:]
+                #sample_name = sample_name[1:]
+                continue
             samples = sample_list.split(',')
             DSIDs = [path.split('/')[-1][:6] for path in samples]
             for id in DSIDs:

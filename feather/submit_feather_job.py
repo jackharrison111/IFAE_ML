@@ -1,5 +1,6 @@
 import os
 import argparse
+import shutil
 
 if __name__ == '__main__':
     
@@ -11,17 +12,19 @@ if __name__ == '__main__':
     
     os.chdir("/nfs/pic.es/user/j/jharriso/IFAE_ML")
 
-    job_name = "RetryZZ"
+    job_name = "MakeAllSigs"
+    SIGNALS = True
     
     regions = []
     '''
     regions += ['1Z_0b_2SFOS']
+    '''
     regions += ['0Z_0b_0SFOS', '0Z_0b_1SFOS', '0Z_0b_2SFOS',
                 '1Z_0b_1SFOS', '1Z_0b_2SFOS', '2Z_0b',
                 '0Z_1b_0SFOS', '0Z_1b_1SFOS', '0Z_1b_2SFOS',
                 '1Z_1b_1SFOS', '1Z_1b_2SFOS', '2Z_1b']
-    '''
-    regions += ['2Z_0b']
+    
+    #regions += ['1Z_0b_2SFOS']
     
     flavour = "testmatch"
 
@@ -29,7 +32,15 @@ if __name__ == '__main__':
         scriptdir = f"feather/submits/{job_name}/{region}"
         if not os.path.exists(scriptdir):
             os.makedirs(scriptdir)
-
+            
+        #Copy the config file to the submit dir and use that
+        conf_file = f"configs/feather_configs/10GeV/{region}.yaml"
+        
+        if SIGNALS:
+            conf_file = f"configs/feather_configs/10GeV/VLLs/{region}.yaml"
+        
+        new_conf_file = os.path.join(scriptdir, 'feather_config.yaml')
+        shutil.copyfile(conf_file, new_conf_file)
             
         #Make the executable file
         sh_name = os.path.join(scriptdir,f"{region}.sh")
@@ -41,8 +52,8 @@ if __name__ == '__main__':
         execute.write('eval "$(conda shell.bash hook)"\n')
         execute.write('mamba activate ML_env\n')
               
-        conf_file = f"configs/feather_configs/10GeV/{region}.yaml"
-        func = f'python feather/make_feather.py -c "%s"'%conf_file
+            
+        func = f'python feather/make_feather.py -c "%s"'%new_conf_file
         execute.write(func)
                        
         execute.write(' \n')

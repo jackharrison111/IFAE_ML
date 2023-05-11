@@ -35,6 +35,7 @@ import math
 #Plotting
 from plotting.plot_results import Plotter
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 import pickle
 
@@ -63,6 +64,7 @@ class Tester():
         
         output = {
             'data' : [],
+            'reco' : [],
             'mu' : [],
             'loss' : [],
             'samples' : [],
@@ -89,6 +91,7 @@ class Tester():
                 loss, mse, kld = model.loss_function(out, data, mu, logVar)
                 
                 output['data'].append(np.array(data))
+                output['reco'].append(np.array(out))
                 output['mu'].append(mu.tolist())
                 output['loss'].append(loss.item())
                 output['samples'].append(sample[0])
@@ -171,7 +174,10 @@ class Tester():
         #Calculate separation + make plot
         if kwargs.get('chi2_plots', False) and sig_output:
             
-            separation_samples = ['Esinglet150', 'Esinglet300', 'Mdoublet700']
+            separation_samples = self.config['separation_samples']
+            sample_labels = self.config['sample_labels']
+            sample_cols = self.config['sample_cols']
+            
             histos = []
             edges = []
             histos.append(norm_test_logloss_c)
@@ -194,7 +200,8 @@ class Tester():
                 
             with open(os.path.join(self.out_dir, 'Chi2_Distances.txt'),'w') as f:
                 f.writelines(chi2_out)
-            p.plot_hist_stack(edges, histos, xlab='Log loss', ylab='Counts', labels=['Bkg','E(150)','E(300)','M(700)'], save_name=os.path.join(self.out_dir,'Separation_Hist.png'))# colours=['r','g','b']
+                
+            p.plot_hist_stack(edges, histos, xlab='Log loss', ylab='Counts', labels=['Bkg']+sample_labels, save_name=os.path.join(self.out_dir,'Separation_Hist.png'))
 
     
     
@@ -233,7 +240,7 @@ class Tester():
                 cumsum_hists.append(cum_sum)
                 
          
-            p.plot_Nsig_vs_Nbkg(cumsum_hists, xlab='$N_{bkg}$', ylab='$N_{sig}$',labels=['Bkg','E(150)','E(300)','M(700)'], colors=['b','orange','g','r'],
+            p.plot_Nsig_vs_Nbkg(cumsum_hists, xlab='$N_{bkg}$', ylab='$N_{sig}$',labels=['Bkg']+sample_labels, colors=['b']+sample_cols,
                                save_name=os.path.join(self.out_dir, 'Nsig_vs_Nbkg_curves.png'))
             
             if kwargs.get('sig_vs_nbkg', False):
@@ -245,7 +252,7 @@ class Tester():
                     sig = np.cumsum(np.flip(loss_count_hists[i])) / np.sqrt(np.flip(test_logloss_counts))
                     significances.append(sig[:-20])
                 
-                p.plot_significances(significances, xlab='$N_{bkg}$', ylab='$\sigma$',labels=['Bkg','E(150)','E(300)','M(700)'], colors=['b','orange','g','r'],
+                p.plot_significances(significances, xlab='$N_{bkg}$', ylab='$\sigma$',labels=['Bkg']+sample_labels, colors=['b']+sample_cols,
                                save_name=os.path.join(self.out_dir, 'SigvsBkg_curves.png'))
             
             
@@ -273,6 +280,27 @@ class Tester():
                                  labels=sample_ns+['VLLs'], xlab='Log loss', ylab='Counts',
                                 save_name=os.path.join(self.out_dir,'Logloss_bySample.png'))
             
+        
+        #Plot input vs output distributions
+        if kwargs.get('inp_vs_out', False):
+            bins = np.linspace(-5,5,20)
+            inp = np.array(bkg_output['data']).reshape(len(bkg_output['data']), -1)
+            out = np.array(bkg_output['reco']).reshape(len(bkg_output['data']), -1)
+            print(out.shape)
+            vars = [n for n in self.config['training_variables'] if n not in ['weight','sample','eventNumber']]
+            for i in range(inp.shape[-1]):
+                
+                x = inp[:,i]
+                reco = out[:,i]
+                plt.figure()
+                plt.hist(x, bins=bins, label='Input', alpha=0.5)
+                plt.hist(reco, bins=bins, label='Output',alpha=0.5)
+                plt.title(f"{vars[i]}")
+                plt.legend(title=self.config['Region_name'])
+                if not os.path.exists(os.path.join(self.out_dir, f"input_vs_output")):
+                    os.makedirs(os.path.join(self.out_dir, f"input_vs_output"))
+                plt.savefig(os.path.join(self.out_dir, f"input_vs_output/{vars[i]}.png"))
+                plt.close()
         ...
         
         

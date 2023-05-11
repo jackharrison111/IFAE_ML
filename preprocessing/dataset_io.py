@@ -41,8 +41,10 @@ class DatasetHandler():
         
         self.data_path = os.path.join(self.config['samples_path'], self.config['feather_file'])
         chosen_samples = self.config.get('chosen_samples', None)
+        self.signal = False
         
         if scalers:
+            self.signal=True
             self.data_path = os.path.join(self.config['samples_path'], self.config['signal_file'])
             chosen_samples = self.config.get('signal_samples',None)
         
@@ -65,8 +67,12 @@ class DatasetHandler():
         if chosen_samples:
             self.data = self.data.loc[self.data['sample'].isin(chosen_samples)]
             print(f"Only using samples: {chosen_samples}")
-        if self.config['train_size'] != -1:
-            self.data = self.data[:self.config['train_size']]
+        if self.signal:
+            if self.config['num_test_samples'] != -1:
+                self.data = self.data[:self.config['num_test_samples']]
+        else:
+            if self.config['train_size'] != -1:
+                self.data = self.data[:self.config['train_size']]
         
         
     #Function to calculate the MC weights from input datagframe

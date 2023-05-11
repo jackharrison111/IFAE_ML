@@ -115,7 +115,8 @@ if __name__ == '__main__':
         'chi2_plots' : True,
         'nsig_vs_nbkg' : True,
         'sig_vs_nbkg' : False,
-        'trexfitter_plot':True
+        'trexfitter_plot':True,
+        'inp_vs_out':True,
     }
     
     tester.analyse_results(output, sig_output=sig_output, **outplots)

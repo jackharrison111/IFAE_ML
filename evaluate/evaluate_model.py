@@ -73,7 +73,6 @@ if __name__ == '__main__':
     
     featherconfig = os.path.join('configs/feather_configs/10GeV',f"{region}.yaml")
     feather_conf = load_yaml_config(featherconfig)
-    
     cut_expr = feather_conf[feather_conf['cut_choice']]
     
     
@@ -176,14 +175,14 @@ if __name__ == '__main__':
                 for col in odd_evts.columns:
                     scaler = pickle.load(open(os.path.join(odd_load_dir,f'scalers/{col}_scaler.pkl'),'rb'))
                     odd_evts[col] = scaler.transform(np.array(odd_evts[col]).reshape(-1,1))
-                    odd_data = torch.Tensor(odd_evts.values)
+                odd_data = torch.Tensor(odd_evts.values)
             
             if len(even_evts) != 0:
                 even_evts = even_evts[train_vars]
                 for col in even_evts.columns:
                     scaler = pickle.load(open(os.path.join(even_load_dir,f'scalers/{col}_scaler.pkl'),'rb'))
                     even_evts[col] = scaler.transform(np.array(even_evts[col]).reshape(-1,1))
-                    even_data = torch.Tensor(even_evts.values)
+                even_data = torch.Tensor(even_evts.values)
                     
             del even_evts, odd_evts, scaler
             print(f"Even data: {len(even_data)}, Odd data: {len(odd_data)}")

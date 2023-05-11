@@ -1,29 +1,34 @@
 import os
 import argparse
+from set_regions import define_regions
+    
 
 if __name__ == '__main__':
     
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-s", "--submit",default=False, help="Choose whether to submit the jobs or not", type=bool)
-    parser.add_argument("-p", "--parallel",default=False, help="Choose whether to submit the jobs or not", type=bool)
+    parser.add_argument("-p", "--parallel",default=False, help="Choose whether to submit the jobs in parallel", type=bool)
     args = parser.parse_args()
     split = args.parallel
     
     
     os.chdir("/nfs/pic.es/user/j/jharriso/IFAE_ML")
 
-    job_name = "ParallelSubmissionEval"
+    job_name = "MakeScoreAllRegions"
     
-    regions = {}
-    regions['1Z_1b_2SFOS'] = {
-        'even_load_dir' : 'results/1Z_1b_2SFOS_FirstRun/Run_1252-24-02-2023',
-        'odd_load_dir'  : 'results/1Z_1b_2SFOS_OddRun/Run_1609-24-02-2023',
-        'split_amount' : 100,
-        'total_files' : 2000,
-    }
+    chosen_regions = ['1Z_0b_2SFOS']
+    
+    chosen_regions = ['0Z_0b_0SFOS', '0Z_0b_1SFOS', '0Z_0b_2SFOS',
+                    '1Z_0b_1SFOS', '1Z_0b_2SFOS', '2Z_0b',
+                    '0Z_1b_0SFOS', '0Z_1b_1SFOS', '0Z_1b_2SFOS',
+                    '1Z_1b_1SFOS', '1Z_1b_2SFOS', '2Z_1b']
+    
+    
+    regions = define_regions()
     
     '''
+    
     regions += ['0Z_0b_0SFOS', 
                 '0Z_0b_1SFOS', '0Z_0b_2SFOS',
                 '1Z_0b_1SFOS', '1Z_0b_2SFOS',
@@ -33,17 +38,17 @@ if __name__ == '__main__':
     
     #regions += ['2Z_0b']
     
-    
     #regions = ['VLLs/'+r for r in regions]
     
     flavour = "long"
 
-    for region, vals in regions.items():
+    for chosen_region in chosen_regions:
+        region = chosen_region
+        vals = regions[chosen_region]
         scriptdir = f"evaluate/jobs/{job_name}/{region}"
         if not os.path.exists(scriptdir):
             os.makedirs(scriptdir)
             
-       
         if not os.path.exists(os.path.join(scriptdir,'logs')):
             os.makedirs(os.path.join(scriptdir,'logs'))
         if not os.path.exists(os.path.join(scriptdir,'outs')):
@@ -51,10 +56,11 @@ if __name__ == '__main__':
         if not os.path.exists(os.path.join(scriptdir,'errs')):
             os.makedirs(os.path.join(scriptdir,'errs'))
         
-
         if split:
+            
             s = 0
             for i in range(vals['split_amount'], vals['total_files'],vals['split_amount']):
+                
                 #Make the executable file
                 sh_name = os.path.join(scriptdir,f"{region}_{s}_{i}.sh")
                 execute = open(sh_name, "w")
@@ -64,9 +70,14 @@ if __name__ == '__main__':
                 execute.write('cd /nfs/pic.es/user/j/jharriso/IFAE_ML\n')               
                 execute.write('eval "$(conda shell.bash hook)"\n')
                 execute.write('mamba activate ML_env\n')
+                
+                feather_conf = f'configs/feather_configs/10GeV/{region}.yaml'
 
                 #conf_file = f"configs/training_configs/Regions/{region}/training_config.yaml"
-                func = f"python evaluate/evaluate_model.py -r {region} -e {vals['even_load_dir']} -o {vals['odd_load_dir']} --First {s} --Last {i}"
+                func = f"python evaluate/evaluate_model_v3.py -r {region} -e {vals['even_load_dir']} -o {vals['odd_load_dir']} --First {s} --Last {i} -f {feather_conf}"
+                
+                #Need to set the feather file, the config file to use, 
+                
                 execute.write(func)
 
                 execute.write(' \n')
@@ -126,7 +137,7 @@ if __name__ == '__main__':
         condor.write(junk2)
         condor.write(junk3)
         condor.write("getenv = True\n")
-        condor.write('flavour=long\n')
+        condor.write('+flavour="long"\n')
         condor.write('request_cpus = 1\n')
 
         condor.write('request_memory = 8 GB\n')

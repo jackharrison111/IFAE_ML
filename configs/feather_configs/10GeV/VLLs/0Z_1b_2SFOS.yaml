@@ -1,13 +1,13 @@
 #Set the input config files
 region: '0Z_1b_2SFOS'
-region_save_name : '0Z_1b_2SFOS_VLLs_10GeV'
+region_save_name : '0Z_1b_2SFOS_Sigs_10GeV'
 
 #Bkg configs:
 variables_file : 'VLL4321_variables.txt'
 samples_file : 'VLL4321_samples.txt'
 json_output : 'VLL4321_samples.json'
 nominal_path : "/data/at3/scratch3/multilepton/VLL_production/nominal"
-feather_path : "/data/at3/scratch3/multilepton/VLL_production/feather/VLLs"
+feather_path : "/data/at3/scratch3/multilepton/VLL_production/feather"
 
 #Data configs:
 #variables_file : 'configs/Data_variables.txt'
@@ -30,7 +30,7 @@ feather_path : "/data/at3/scratch3/multilepton/VLL_production/feather/VLLs"
 cut_choice : 'cut_0Z_1b_2SFOS_remade'
 variable_functions_choice: '0Z_0b_2SFOS_funcs'
 
-0Z_0b_0SFOS_funcs: ['find_bestZll_pair', 'calc_4lep_mZll', 'calc_4lep_pTll', 'calc_m3l']
+0Z_0b_0SFOS_funcs: ['find_bestZll_pair', 'calc_4lep_pTll', 'calc_m3l']
 0Z_0b_1SFOS_funcs: ['find_Z_pairs_0Z_1SFOS', 'calc_4lep_pTll', 'calc_m3l']
 0Z_0b_2SFOS_funcs: ['find_pairings_0Z_2SFOS', 'calc_4lep_pTll', 'calc_m3l']
 1Z_0b_1SFOS_funcs: ['find_Z_pairs_1Z_1SFOS', 'calc_4lep_pTll', 'calc_m3l']
