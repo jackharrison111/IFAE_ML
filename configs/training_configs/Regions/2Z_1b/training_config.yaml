@@ -67,7 +67,10 @@ training_variables:     ['met_met',
     'M3l_low',
     'best_ptZll',
     'other_ptZll',
-    'sumPsbtag'
+    'sumPsbtag',
+    'MtLepMet',
+    'MT_otherllMET',
+    'MT_ZllMET'
 ]
 
  

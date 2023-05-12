@@ -70,7 +70,10 @@ training_variables:     ['met_met',
     'M3l_high',
     'M3l_low',
     'best_ptZll',
-    'other_ptZll'
+    'other_ptZll',
+    'MtLepMet',
+    'MT_otherllMET',
+    'MT_ZllMET'
 ]
 
  

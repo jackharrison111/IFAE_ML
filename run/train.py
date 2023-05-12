@@ -74,7 +74,6 @@ from torch.utils.data import DataLoader
 from plotting.plot_results import Plotter
 
 
-
 class Trainer():
     
     def __init__(self, model, config, sample_groupings={}, output_dir=None):
@@ -91,14 +90,17 @@ class Trainer():
         
         self.reversed_groupings = get_reversed_groupings(self.config['groupings'])
         
-        self.make_optimizer(learning_rate=self.config['learning_rate'])
+        self.make_optimizer(learning_rate=self.config['learning_rate'], weight_decay=self.config.get('weight_decay', None))
         self.p = Plotter()
         
         
-    def make_optimizer(self, learning_rate=1e-2):
+    def make_optimizer(self, learning_rate=1e-2, weight_decay=None):
         
         if self.config['optimizer'] == 'Adam':
-            self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
+            if weight_decay:
+                self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate,weight_decay=weight_decay)
+            else:
+                self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
         else:
             self.optimizer = optim.SGD(self.model.parameters(), lr=learning_rate)
         

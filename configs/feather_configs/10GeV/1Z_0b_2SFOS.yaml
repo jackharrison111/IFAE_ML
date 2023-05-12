@@ -1,10 +1,10 @@
 #Set the input config files
 region: '1Z_0b_2SFOS'
-region_save_name : '1Z_0b_2SFOS_FullVars_10GeV'
+region_save_name : '1Z_0b_2SFOS_10GeV'
 
 #Bkg configs:
-#variables_file : 'Bkg_variables.txt'
-variables_file: 'full_list_variables.txt'
+variables_file : 'Bkg_variables.txt'
+#variables_file: 'full_list_variables.txt'
 samples_file : 'Bkg_samples.txt'
 json_output : 'Bkg_samples.json'
 nominal_path : "/data/at3/scratch3/multilepton/VLL_production/nominal"
