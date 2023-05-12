@@ -442,9 +442,6 @@ class VariableMaker():
         if len(df) == 0:
             return df
         
-        print(type(df.loc[0,'quadlep_type']), df.loc[0,'quadlep_type'])
-        print(df.loc[0,'quadlep_type'] == 3)
-        
         df['l0'] = df['best_Zllpair'].astype('str').str[-2]
         df['l1'] = df['best_Zllpair'].astype('str').str[-1]
 

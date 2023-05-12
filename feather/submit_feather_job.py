@@ -12,7 +12,7 @@ if __name__ == '__main__':
     
     os.chdir("/nfs/pic.es/user/j/jharriso/IFAE_ML")
 
-    job_name = "MakeAllSigs"
+    job_name = "MTLepMET_AllSigs"
     SIGNALS = True
     
     regions = []
@@ -83,7 +83,7 @@ if __name__ == '__main__':
         condor.write(junk3)
         condor.write(batch_name)
         condor.write("getenv = True\n")
-        condor.write(f"flavour = long\n")
+        condor.write('+flavour = "long"\n')
         condor.write('request_cpus = 1\n')
         condor.write('request_memory = 16 GB\n')
         condor.write('on_exit_remove          = (ExitBySignal == False) && (ExitCode == 0)\n')

@@ -133,15 +133,16 @@ class Trainer():
                 self.optimizer.zero_grad()
                 
                 #Feed data into model
-                outputs = self.model(data)
+                #outputs = self.model(data)
                 
                 #Get the loss
-                losses = self.model.loss_function(outputs)
+                #losses = self.model.loss_function(outputs)
             
                 
                 # Feeding a batch into the network to obtain the output image, mu, and logVar
                 out, mu, logVar = self.model(data)
                 loss, mse, kld = self.model.loss_function(out, data, mu, logVar, variational=self.model.variational, beta=self.config["beta"])
+                
                 num_examples = loss.shape[0]
                 
                 epoch_loss += torch.sum(loss).item()
