@@ -20,6 +20,8 @@ class Plotter():
         plt.title(title)
         if save_name:
             plt.savefig(save_name)
+            if '.png' in save_name:
+                plt.savefig(save_name.replace(".png", ".pdf"))
         plt.close()
         
         
@@ -43,6 +45,8 @@ class Plotter():
         plt.title(title)
         if save_name:
             plt.savefig(save_name)
+            if '.png' in save_name:
+                plt.savefig(save_name.replace(".png", ".pdf"))
         plt.close()
         
         
@@ -59,6 +63,8 @@ class Plotter():
         plt.grid(True)
         if save_name:
             plt.savefig(save_name)
+            if '.png' in save_name:
+                plt.savefig(save_name.replace(".png", ".pdf"))
         plt.close()
     
     def plot_hist_stack(self, edge_list, count_list, xlab=None, ylab=None, title=None,
@@ -73,6 +79,8 @@ class Plotter():
         plt.grid(True)
         if save_name:
             plt.savefig(save_name)
+            if '.png' in save_name:
+                plt.savefig(save_name.replace(".png", ".pdf"))
         plt.close()
         
     def plot_cdf(self, edge_list, count_list, xlab=None, ylab=None, title=None,
@@ -92,6 +100,8 @@ class Plotter():
         plt.grid(True)
         if save_name:
             plt.savefig(save_name)
+            if '.png' in save_name:
+                plt.savefig(save_name.replace(".png", ".pdf"))
         plt.close()
         
     def plot_2d(self):
@@ -115,6 +125,8 @@ class Plotter():
         plt.grid(True)
         if save_name:
             plt.savefig(save_name)
+            if '.png' in save_name:
+                plt.savefig(save_name.replace(".png", ".pdf"))
         plt.close()
         
     def plot_significances(self, cumsum_hists, xlab=None, ylab=None,labels=None,
@@ -129,6 +141,8 @@ class Plotter():
         plt.grid(True)
         if save_name:
             plt.savefig(save_name)
+            if '.png' in save_name:
+                plt.savefig(save_name.replace(".png", ".pdf"))
         plt.close()
         ...
     
@@ -144,6 +158,8 @@ class Plotter():
         plt.grid(True)
         if save_name:
             plt.savefig(save_name)
+            if '.png' in save_name:
+                plt.savefig(save_name.replace(".png", ".pdf"))
         plt.close()
     
         

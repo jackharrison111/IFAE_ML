@@ -31,13 +31,16 @@ from sklearn.model_selection import train_test_split
 
 class DatasetHandler():
     
-    def __init__(self, dataset_config=None, scalers=None, job_name=None):
+    def __init__(self, dataset_config=None, scalers=None, job_name=None, out_dir=None):
         
         
         self.config = load_yaml_config(dataset_config)
 
-        root = os.path.join('results', job_name) if job_name is not None else os.path.join('results',self.config['out_folder'])
-        self.output_dir = make_output_folder(self.config, root_loc=root)
+        if out_dir:
+            self.output_dir = out_dir
+        else:
+            root = os.path.join('results', job_name) if job_name is not None else os.path.join('results',self.config['out_folder'])
+            self.output_dir = make_output_folder(self.config, root_loc=root)
         
         self.data_path = os.path.join(self.config['samples_path'], self.config['feather_file'])
         chosen_samples = self.config.get('chosen_samples', None)
@@ -192,7 +195,7 @@ class DatasetHandler():
             
             #Sample 20% for the validation
             if use_val:
-                train, val = train_test_split(train, test_size=self.config['validation_fraction'])
+                test, val = train_test_split(test, test_size=self.config['validation_fraction'])
                 
             print(f"Train size: {len(train)}, Val size: {len(val)}, Test size: {len(test)}")
             return train, val, test

@@ -10,6 +10,10 @@ feather_file : '2Z_0b_10GeV.ftr'
 signal_file: '2Z_0b_Sigs_10GeV.ftr'
 
 
+#Evaluating to ntuple
+ntuple_path: '/data/at3/scratch3/multilepton/VLL_production/nominal'
+ntuple_outpath: '/data/at3/scratch3/multilepton/VLL_production/evaluations'
+
 #Outputting to ntuple
 add_to_ntuple: False
 
@@ -28,7 +32,7 @@ num_epochs : 2000
 optimizer: 'Adam'
 test_dump : False
 use_eventnumber: True
-even_or_odd : 'Odd'
+even_or_odd : 'Even'
 beta: 1
 load_path : 'outputs/VAE_1943-16-08-2022/model_state_dict.pt'
 
@@ -36,7 +40,7 @@ load_path : 'outputs/VAE_1943-16-08-2022/model_state_dict.pt'
 #Preprocessing settings
 mc_weight_choice: 'VLL_production'
 remove_zero_weights : True
-remove_negative_weights : True
+remove_negative_weights : False
 weight_loss : True
 added_weight_factor : 1
 
@@ -51,7 +55,7 @@ validation_set: True
 validation_groups : ['VV', 'Top', 'VH', 'VVV']
 validation_fraction : 0.2
 test_fraction : 0.2
-val_frequency : 20
+val_frequency : 2
 num_test_samples : -1
 evaluate_signals : True
 
@@ -61,7 +65,8 @@ training_variables:     ['met_met',
     'Mllll0123',
     'HT_lep',
     'HT_jets',
-    'nJets_OR',
+    #'nJets_OR',
+    'nJets_Continuous',
     'weight',
     'sample',
     'eventNumber',
@@ -71,7 +76,7 @@ training_variables:     ['met_met',
     'M3l_low',
     'best_ptZll',
     'other_ptZll',
-    'MtLepMet',
+        'MtLepMet',
     'MT_otherllMET',
     'MT_ZllMET'
 ]
@@ -120,3 +125,24 @@ groupings:
 separation_samples: ['Esinglet150', 'Esinglet300', 'Mdoublet700', 'AZllHhhA400H300', 'VLLe600S350', 'VLLm1200S950']
 sample_labels: ['E(150)','E(300)','M(700)', 'AZH(400,300)', 'VLLeS(600,350)', 'VLLmS(1200,950)']
 sample_cols: ['orange','g','r', 'm', 'brown', 'olive']
+
+
+#Analysis output settings
+anomaly_score_plot:
+   num_bins: 100
+   bin_min: 0
+   bin_max: 1
+   scale_score: True
+
+output_plots:
+    bkg_plot: True
+    inp_vs_out: True
+    loss_hist: True
+    logloss_hist: True
+    logloss_sample_hist: True
+    logloss_BkgvsSig_hist: True
+    cdf_hist: True
+    chi2_plots: True
+    nsig_vs_nbkg: True
+    sig_vs_bkg: False
+    trexfitter_plot: True

@@ -1,30 +1,35 @@
 
 #Metadata
-Region_name: '1Z_1b_2SFOS'
-out_folder: '1Z_1b_2SFOS_AllSigs'
+Region_name: '0Z_0b_2SFOS'
+out_folder: '0Z_0b_2SFOS_NFs'
 
 
 #Samples
 samples_path: '/data/at3/scratch3/multilepton/VLL_production/feather'
-feather_file : '1Z_1b_2SFOS_10GeV.ftr'
-signal_file: '1Z_1b_2SFOS_Sigs_10GeV.ftr'
-
+feather_file : '0Z_0b_2SFOS_10GeV.ftr'
+signal_file: '0Z_0b_2SFOS_Sigs_10GeV.ftr'
 
 #Evaluating to ntuple
 ntuple_path: '/data/at3/scratch3/multilepton/VLL_production/nominal'
 ntuple_outpath: '/data/at3/scratch3/multilepton/VLL_production/evaluations'
 
+
 #Outputting to ntuple
 add_to_ntuple: False
 
+base_dir: '/data/at3/scratch3/jharrison/nominal/'
+out_dir: '/data/at3/scratch3/jharrison/mod_ntuples_newvars/'
+vll_base_dir: '/data/at3/scratch3/jharrison/VLL'
+vll_out_dir: '/data/at3/scratch3/jharrison/mod_VLL'
 
 
 #Set training hyperparameters
 Train : True
 train_size: -1
-batch_size : 512
-learning_rate : 0.01 #AE
+batch_size : 1024
+learning_rate : 0.00001
 num_epochs : 2000
+weight_decay: 0.00001
 optimizer: 'Adam'
 test_dump : False
 use_eventnumber: True
@@ -41,10 +46,10 @@ weight_loss : True
 added_weight_factor : 1
 
 #Model setup
-model_type : 'AE'
-enc_layers: [8]
-dec_layer: [8]
-z_dim: 4
+model_type : 'NF'
+hidden_depth: 2
+num_layers: 8
+hidden_dim: 64
 
 #Test settings
 validation_set: True
@@ -72,12 +77,10 @@ training_variables:     ['met_met',
     'M3l_low',
     'best_ptZll',
     'other_ptZll',
-    'sumPsbtag',
-        'MtLepMet',
+    'MtLepMet',
     'MT_otherllMET',
     'MT_ZllMET'
 ]
-
  
 #Set the samples used
 chosen_samples : [
@@ -117,6 +120,8 @@ groupings:
    Top: ['ttZMadNew', 'ttlllowMass', 'fourTop', 'ttWW','ttH','WtZ']
    Other: ['singleTopschan','singleToptchan','tW','Zjets','Wjets','Vgamma','ttW2210EW','rareTop','threeTop','tZ','tHjb','ttbarnonallhad','ttZZ','ttWH','ttHH']
 
+
+
 #Set the signals to run over
 separation_samples: ['Esinglet150', 'Esinglet300', 'Mdoublet700', 'AZllHhhA400H300', 'VLLe600S350', 'VLLm1200S950']
 sample_labels: ['E(150)','E(300)','M(700)', 'AZH(400,300)', 'VLLeS(600,350)', 'VLLmS(1200,950)']
@@ -141,4 +146,3 @@ output_plots:
     chi2_plots: True
     nsig_vs_nbkg: True
     sig_vs_bkg: False
-    trexfitter_plot: True

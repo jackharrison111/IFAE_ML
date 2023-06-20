@@ -12,12 +12,12 @@ if __name__ == '__main__':
     
     os.chdir("/nfs/pic.es/user/j/jharriso/IFAE_ML")
 
-    job_name = "MTLepMET_Rerun1Z0b2SFOS"
+    job_name = "MTLepMET_Rerun0Z2SFOS"
     SIGNALS = False
     
     regions = []
     
-    regions += ['1Z_0b_2SFOS']
+    regions += ['0Z_0b_2SFOS', '0Z_1b_2SFOS']
     '''
     regions += ['0Z_0b_0SFOS', '0Z_0b_1SFOS', '0Z_0b_2SFOS',
                 '1Z_0b_1SFOS', '1Z_0b_2SFOS', '2Z_0b',

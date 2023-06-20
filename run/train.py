@@ -1,5 +1,7 @@
 #Steps are: 
 
+#/nfs/pic.es/user/j/jharriso/IFAE_ML/results/TestRun/1Z_0b_2SFOS_NFs/Run_0057-13-05-2023
+
 # Using a config input:
 
 #Read data
@@ -59,7 +61,9 @@ import datetime as dt
 from tqdm.auto import tqdm
 from time import perf_counter
 import yaml
+import pickle
 
+import copy
 
 #Utils
 from utils._utils import load_yaml_config, get_reversed_groupings, make_output_folder
@@ -109,218 +113,316 @@ class Trainer():
         
         print(f"Using available: {self.device}")
         
-        epoch_losses, epoch_mses, epoch_klds, epoch_loglosses = [], [], [], []
-        weighted_epoch_losses, weighted_epoch_loglosses = [], []
-        validation_losses, validation_loglosses = {}, {}
-        validation_losses_weighted, validation_loglosses_weighted = {}, {}
+        epoch_losses, epoch_mses, epoch_klds = [], [], []
+        weighted_epoch_losses = []
+        
+        self.best_val_loss = None
+        self.best_val_epoch = None
+        
+        epoch_losses = {}
+        weighted_losses = {}
+        
+        #epoch_validation_losses, validation_loglosses = {}, {}
+        #validation_losses_weighted, validation_loglosses_weighted = {}, {}
+
+        epoch_val_losses, epoch_val_losses_avg, epoch_val_weighted_losses, sum_val_losses = {}, {}, {}, {}
 
         
         weight_loss = self.config['weight_loss']
+        use_abs_weights = self.config.get('absolute_weights',True)
+        use_scaled = self.config.get('use_scaled', True)
+        
         s = perf_counter()
         for epoch in range(self.config['num_epochs']):
             
             l1 = perf_counter()
-            epoch_loss, epoch_counts, epoch_kld, epoch_mse = 0,0,0,0
-            weighted_epoch_loss = 0
+            print(f"Epoch {epoch}:")
+            epoch_info, weighted_epoch_info = {}, {}
+            
             
             self.model.train()
-
             for idx, data_dict in enumerate(dataloader):
                 
                 data = data_dict['data']
-                sc_weight = data_dict['scaled_weight']
+                
+                if use_scaled:
+                    weight = data_dict['scaled_weight']
+                else:
+                    weight = data_dict['weight']
                 
                 data = data.to(self.device)
-                sc_weight = sc_weight.to(self.device)
+                weight = weight.to(self.device)
+                
                 self.optimizer.zero_grad()
                 
                 #Feed data into model
-                #outputs = self.model(data)
+                outputs = self.model(data)
                 
                 #Get the loss
-                #losses = self.model.loss_function(outputs)
+                losses = self.model.loss_function(**outputs)
             
                 
                 # Feeding a batch into the network to obtain the output image, mu, and logVar
-                out, mu, logVar = self.model(data)
-                loss, mse, kld = self.model.loss_function(out, data, mu, logVar, variational=self.model.variational, beta=self.config["beta"])
+                #out, mu, logVar = self.model(data)
+                #loss, mse, kld = self.model.loss_function(out, data, mu, logVar, variational=self.model.variational, beta=self.config["beta"])
                 
-                num_examples = loss.shape[0]
                 
-                epoch_loss += torch.sum(loss).item()
+                loss = losses['loss']
+                
+                epoch_info['loss'] = epoch_info.get('loss', 0) + torch.sum(loss).item()
+                
+                
                 
                 #Multiply the loss by the weights when updating
-                loss = torch.dot(self.config['added_weight_factor']*sc_weight, loss) if weight_loss else torch.dot(sc_weight, loss)
-                if mse is not None:
-                    mse = torch.dot(self.config['added_weight_factor']*sc_weight, mse) if weight_loss else torch.dot(sc_weight, loss)
-                    kld = torch.dot(self.config['added_weight_factor']*sc_weight, kld) if weight_loss else torch.dot(sc_weight, loss)
-
-                weighted_epoch_loss += loss.item()
-                epoch_counts += num_examples
-                if mse is not None:
-                    epoch_mse += mse.item()
-                    epoch_kld += kld.item()
+                if weight_loss and not use_abs_weights:
+                    loss = torch.dot(self.config['added_weight_factor']*weight, loss) 
+                elif use_abs_weights:
+                    loss = torch.dot(torch.abs(weight),loss)
+                else:
+                    torch.dot(weight, loss)
                 
+                #Take the abs of weights
+                weighted_epoch_info['loss'] = weighted_epoch_info.get('loss', 0) + loss.item()
+                epoch_info['counts'] = epoch_info.get('counts', 0) + len(data)
+                
+                
+                if 'mse' in losses.keys():
+                    mse = torch.dot(self.config['added_weight_factor']*weight, losses['mse']) if weight_loss else torch.dot(weight, loss)
+                    kld = torch.dot(self.config['added_weight_factor']*weight, losses['kld']) if weight_loss else torch.dot(weight, loss)
+                    epoch_info['mse'] = epoch_info.get('mse', 0) + mse.item()
+                    epoch_info['kld'] = epoch_info.get('kld', 0) + kld.item()                   
                 
                 # Backpropagation based on the loss
                 loss.backward()
                 self.optimizer.step()
+            
+            
+            epoch_losses.setdefault('loss', []).append(epoch_info['loss']/epoch_info['counts'])
+            weighted_losses.setdefault('loss', []).append(weighted_epoch_info['loss']/epoch_info['counts'])
+            
+            if 'mse' in epoch_info.keys():
+                epoch_losses.setdefault('mse', []).append(epoch_info['mse']/epoch_info['counts'])
+                epoch_losses.setdefault('kld', []).append(epoch_info['kld']/epoch_info['counts'])
                 
-            normalised_epoch_loss = epoch_loss/epoch_counts
-            normalised_weighted_epoch_loss = weighted_epoch_loss/epoch_counts
-            normalised_epoch_mse = epoch_mse/epoch_counts
-            normalised_epoch_kld = epoch_kld/epoch_counts
-            epoch_losses.append(normalised_epoch_loss)
-            weighted_epoch_losses.append(normalised_weighted_epoch_loss)
-            epoch_loglosses.append(np.log(normalised_epoch_loss))
-            weighted_epoch_loglosses.append(np.log(normalised_weighted_epoch_loss))
-            epoch_mses.append(normalised_epoch_mse)
-            epoch_klds.append(normalised_epoch_kld)
-            print(f"Epoch: {epoch}, Loss: {normalised_epoch_loss}, weighted: {normalised_weighted_epoch_loss}, MSE: {normalised_epoch_mse}, KLD: {normalised_epoch_kld}")
             
+            ###############################################################
+            ### Print output info for tracking
+
+            print(f"      Loss: {epoch_losses['loss'][-1]}")
+            print(f"      Weighted: {weighted_losses['loss'][-1]}")
+            if 'mse' in epoch_losses.keys():
+                    print(f"      MSE: {epoch_losses['mse'][-1]}")
+                    print(f"      KLD: {epoch_losses['kld'][-1]}")
+            ################################################################
+        
             
-            self.model.eval()
-            #And then output a validation loss per sample (per group)
+            #Epoch validation
+            #Output a validation loss per sample (per group)
             if val_loader and self.config['val_frequency'] > 0:
                 if epoch % self.config['val_frequency'] == 0:
-    
-                    val_losses, val_losses_weighted, val_counts = {}, {}, {}
                     
+                    
+                    
+                    self.model.eval()
 
+                    val_losses, val_losses_weighted, val_counts = {}, {}, {}
+                    sum_val_loss = 0
+                    sum_val_counts = 0
                     for idx, data_dict in enumerate(val_loader):
                 
                         data = data_dict['data']
-                        sc_weights = data_dict['scaled_weight']
+                        if use_scaled:
+                            weight = data_dict['scaled_weight']
+                        else:
+                            weight = data_dict['weight']
+                        
                         samples = data_dict['sample']
-                        weights = data_dict['weight']
-                        
+        
+
                         data = data.to(self.device)
-                        samples=samples[0]
-                        out, mu, logVar = self.model(data)
-                        loss, mse, kld = self.model.loss_function(out, data, mu, logVar, 
-                                                            variational=self.model.variational, beta=self.config["beta"])
-                        num_examples = loss.shape[0]
                         
-                        weighted_loss = torch.dot(self.config['added_weight_factor']*sc_weights, loss) if weight_loss else torch.dot(sc_weights, loss)
+                        #Feed data into model
+                        outputs = self.model(data)
+
+                        #Get the loss
+                        losses = self.model.loss_function(**outputs)
+                    
+                        #out, mu, logVar = self.model(data)
+                        #loss, mse, kld = self.model.loss_function(out, data, mu, logVar, 
+                        #                                    variational=self.model.variational, beta=self.config["beta"])
+                        #num_examples = loss.shape[0]
                         
-                        #Don't multiply loss by weights when testing
-                        loss = torch.sum(loss)
-                        num_examples=len(weights)
+                        #Figure out how to do this in batches
                         
-                        if mse is not None:
+                        loss = losses['loss']
+                        weighted_loss = self.config['added_weight_factor']*weight*loss if  weight_loss else weight*loss
+                        
+                        sum_val_loss += torch.sum(loss).item()
+                        sum_val_counts += len(loss)
+                        
+                        if 'mse' in losses.keys():
                             mse = torch.sum(mse)
                             kld = torch.sum(kld)
+                            
+                        for sample in set(samples):
+                        
+                            #Get the indices that are this sample
+                            inds = np.where(np.isin(samples,[sample]))[0]
 
-                        group = self.reversed_groupings.get(samples,'All')
+                            #Sum the loss of these samples
+                            sample_losses = loss[inds]
+                            w_sample_losses = weighted_loss[inds]    
+                            
+                            #Get the group that the sample is in
+                            group = self.reversed_groupings.get(sample,'All')
                        
-                        running_sum = val_losses.get(group,0) + loss.item()
-                        running_weighted_sum = val_losses_weighted.get(group,0) + weighted_loss.item()
-                        running_counts = val_counts.get(group,0) + num_examples
+                            #Add the loss to the right sample 
+                            val_losses[group] = val_losses.get(group,0) + torch.sum(sample_losses).item()
+                            val_counts[group] = val_counts.get(group,0) + len(sample_losses)
+                            val_losses_weighted[group] = val_losses_weighted.get(group,0) + torch.sum(w_sample_losses).item()
+                
+                
+                    #Now for each sample that we have validated on
+                    for group in val_counts.keys():
                         
-                        val_losses[group] = running_sum
-                        val_losses_weighted[group] = running_weighted_sum
-                        val_counts[group] = running_counts
-
-                    for key in val_counts.keys():
-                        #Average the loss per sample
-                        key_loss = val_losses[key]/val_counts[key]
-                        key_weighted_loss = val_losses_weighted[key]/val_counts[key]
-                        val_losses[key] = key_loss
-                        val_losses_weighted[key] = key_weighted_loss
+                        #Average the loss over an epoch for each sample
+                        val_losses[group] = val_losses[group]/val_counts[group]
+                        val_losses_weighted[group] = val_losses_weighted[group]/val_counts[group]
                         
-                        loss_store = validation_losses.get(key, [])
-                        logloss_store = validation_loglosses.get(key, [])
-                        logloss_store.append(np.log(key_loss))
-                        loss_store.append(key_loss)
-                        validation_losses[key] = loss_store
-                        validation_loglosses[key] = logloss_store
+                        #Store this epoch's validation data
+                        epoch_val_losses.setdefault(group, []).append(val_losses[group])
+                        epoch_val_weighted_losses.setdefault(group, []).append(val_losses_weighted[group])
                         
-                        loss_store_w = validation_losses_weighted.get(key, [])
-                        logloss_store_w = validation_loglosses_weighted.get(key, [])
-                        logloss_store_w.append(np.log(key_weighted_loss))
-                        loss_store_w.append(key_weighted_loss)
-                        validation_losses_weighted[key] = loss_store_w
-                        validation_loglosses_weighted[key] = logloss_store_w
-                        
-                        
-                        
-                    print(f"Epoch {epoch}: Validation Loss {val_losses}, Weighted: {val_losses_weighted}")
+                    sum_val_losses.setdefault('Val.', []).append(sum_val_loss/sum_val_counts)
+                    
+                    print(f"      Validation Loss: {val_losses}")
+                    print(f"      Validation weighted: {val_losses_weighted}")
+                
+                    if self.best_val_loss is None or sum_val_loss/sum_val_counts < self.best_val_loss:
+                        self.best_model = copy.deepcopy(self.model)
+                        self.best_val_epoch = epoch
+                        self.best_val_loss = sum_val_loss/sum_val_counts
+                        self.best_optimizer = copy.deepcopy(self.optimizer)
+                    
             l2 = perf_counter()
             print(f"Finished epoch... time taken: {round(l2-l1,2)}s.")
+
             
+        print(f"Finished training... time taken: {round((l2-s),2)/60}mins.")
+        
+        return {'epoch_losses': epoch_losses,
+                'weighted_losses' : weighted_losses,
+                'epoch_val_losses' : epoch_val_losses,
+                'epoch_val_weighted_losses' : epoch_val_weighted_losses,
+                'sum_val_losses' : sum_val_losses}
+                
+    
+    def make_training_outputs(self, **results):
         
         
-        self.save_training()
+        epoch_axis = [i for i in range(len(results['epoch_losses']['loss']))]
         
-        epoch_axis = [i for i in range(len(epoch_losses))]
-        self.p.plot_loss(epoch_axis, epoch_losses, xlab='Epoch', ylab='Loss',
+       
+        #Plot Loss vs Epoch
+        self.p.plot_loss(epoch_axis, results['epoch_losses']['loss'], xlab='Epoch', ylab='Loss',
                    save_name=os.path.join(self.output_dir,'Epoch_losses.png'))
-        self.p.plot_loss(epoch_axis, epoch_loglosses, xlab='Epoch', ylab='Epoch logloss',
+        
+        #Plot Logloss vs Epoch
+        epoch_loglosses = np.log(results['epoch_losses']['loss'])
+        self.p.plot_loss(epoch_axis, epoch_loglosses, xlab='Epoch', ylab='logloss',
                    save_name=os.path.join(self.output_dir,'Epoch_loglosses.png'))
         
-        loss_parts = {'MSE loss' : epoch_mses, 'K-L Divergence' : epoch_klds, 'Total' : epoch_losses}
-        self.p.plot_loss_overlay(loss_parts, xlab='Epoch', ylab='Loss',
-                              save_name=os.path.join(self.output_dir,'Epoch_losses_Separated.png'),
-                               val_frequency=1)
+        #Plot VAE split losses
+        if 'mse' in results['epoch_losses'].keys():
+            
+            loss_parts = {'MSE loss' : results['epoch_losses']['mse'], 
+                          'K-L Divergence' : results['epoch_losses']['kld'], 
+                          'Total' : results['epoch_losses']['loss']}
+            
+            self.p.plot_loss_overlay(loss_parts, xlab='Epoch', ylab='Loss',
+                                  save_name=os.path.join(self.output_dir,'Epoch_losses_Separated.png'),
+                                   val_frequency=1)
     
-    
-        #Non weighted
-        validation_losses['Train'] = epoch_losses
-        validation_loglosses['Train'] = epoch_loglosses
-        self.p.plot_loss_overlay(validation_losses, xlab='Epoch', ylab='Loss',
+        #Plot validation unweighted losses
+        results['epoch_val_losses']['Train'] = results['epoch_losses']['loss']
+        self.p.plot_loss_overlay(results['epoch_val_losses'], xlab='Epoch', ylab='Loss',
                               save_name=os.path.join(self.output_dir,'Epoch_losses_Val.png'),
                                val_frequency=self.config['val_frequency'])
         
-        self.p.plot_loss_overlay(validation_loglosses, xlab='Epoch', ylab='Logloss',
+        #Plot validation unweighted loglosses
+        val_loglosses = {}
+        for key, val in results['epoch_val_losses'].items():
+            val_loglosses[key] = np.log(np.array(val))
+        self.p.plot_loss_overlay(val_loglosses, xlab='Epoch', ylab='Logloss',
                               save_name=os.path.join(self.output_dir,'Epoch_LogLosses_Val.png'),
                                val_frequency=self.config['val_frequency'])
             
-        #Weighted  
-        validation_losses_weighted['Train'] = weighted_epoch_losses
-        validation_loglosses_weighted['Train'] = weighted_epoch_loglosses
+        #Plot validation unweighted as one group
+        train_vs_val = {}
+        train_vs_val['Train'] = results['epoch_losses']['loss']
+        train_vs_val['Val.'] = results['sum_val_losses']['Val.']
+        self.p.plot_loss_overlay(train_vs_val, 
+                                 xlab='Epoch', ylab='Loss',
+                            save_name=os.path.join(self.output_dir,'Epoch_losses_Train_Val.png'),
+                               val_frequency=self.config['val_frequency'])
         
-        self.p.plot_loss_overlay(validation_losses_weighted, 
+        #Plot weighted loss per sample
+        results['epoch_val_weighted_losses']['Train'] = results['weighted_losses']['loss']
+        self.p.plot_loss_overlay(results['epoch_val_weighted_losses'], 
                                  xlab='Epoch', ylab='Weighted Loss',
                             save_name=os.path.join(self.output_dir,'Weighted_epoch_losses_Val.png'),
                                val_frequency=self.config['val_frequency'])
         
-        self.p.plot_loss_overlay(validation_loglosses_weighted, 
+        #Plot weighted logloss per sample
+        weighted_val_loglosses = {}
+        for key, val in results['epoch_val_weighted_losses'].items():
+            weighted_val_loglosses[key] = np.log(val)
+        self.p.plot_loss_overlay(weighted_val_loglosses, 
                                  xlab='Epoch', ylab='Weighted Logloss',
                         save_name=os.path.join(self.output_dir,'Weighted_epoch_LogLosses_Val.png'),
                                val_frequency=self.config['val_frequency'])
-            
-            
-            
-        print(f"Finished training... time taken: {round((l2-s),2)/60}mins.")
-        return epoch_losses, epoch_loglosses, validation_losses
+        
+        
+        #Any other plots needed?
+        ...
     
     
-    def save_training(self):
+    def save_training(self, train_results, save_best=True):
         
         #Save the model and optimizer
-        torch.save(self.model.state_dict(), os.path.join(self.output_dir, 'model_state_dict.pt'))
-        torch.save(self.optimizer.state_dict(), os.path.join(self.output_dir, 'optimizer_state_dict.pt'))
-        
-        
+        if save_best:
+            torch.save(self.best_model.state_dict(), os.path.join(self.output_dir, 'model_state_dict.pt'))
+            torch.save(self.best_optimizer.state_dict(), os.path.join(self.output_dir, 'optimizer_state_dict.pt'))
+            
+            summary = []
+            summary.append(f"Saved best model at epoch {self.best_val_epoch} with validation loss: {self.best_val_loss}\n")
+            with open(os.path.join(self.output_dir, 'training_run_result.txt'), 'w') as f:
+                f.writelines(summary)
                 
-    def run(self, train_loader, val_loader):
+            self.model = self.best_model
+                
+        else:
+            torch.save(self.model.state_dict(), os.path.join(self.output_dir, 'model_state_dict.pt'))
+            torch.save(self.optimizer.state_dict(), os.path.join(self.output_dir, 'optimizer_state_dict.pt'))
+        
+        with open(os.path.join(self.output_dir, 'saved_train_results.pkl'), 'wb') as f:
+            pickle.dump(train_results, f)
+            
+        
+        
+                        
+    def train(self, train_loader, val_loader):
         
 
-        epoch_losses, epoch_loglosses, validation_losses = self.train_model(train_loader, val_loader)
-        self.save_training()
-        print("Finished training.")
+        train_results = self.train_model(train_loader, val_loader)
         
+        self.save_training(train_results)
         
-        self.p.plot_loss([i for i in range(len(epoch_losses))], epoch_losses, xlab='Epoch', ylab='Epoch loss',
-                   save_name=os.path.join(self.output_dir,'Epoch_losses.png'))
+        self.make_training_outputs(**train_results)
         
-        self.p.plot_loss([i for i in range(len(epoch_losses))], epoch_loglosses, xlab='Epoch', ylab='Epoch logloss',
-                   save_name=os.path.join(self.output_dir,'Epoch_Loglosses.png'))
-    
-        validation_losses['Train'] = epoch_losses
-        self.p.plot_loss_overlay(validation_losses, xlab='Epoch', ylab='Epoch loss',
-                              save_name=os.path.join(self.output_dir,'Epoch_losses_Val.png'),
-                               val_frequency=self.config['val_frequency'])
+        print("Finished running training.")
+        return self.model
+
         
     
                     
@@ -334,31 +436,38 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     #Get the model
-    from model.autoencoder import VAE, AE
-    from model.norm_flow import NormFlow
+    from model.model_getter import get_model
+    from preprocessing.dataset_io import DatasetHandler
+    import os 
+    from preprocessing.dataset import data_set
+    from torch.utils.data import DataLoader
     
     with open(args.config,'r') as f:
         conf = yaml.safe_load(f)
+
+    model = get_model(conf)
     
     
-    useful_columns = [col for col in conf['training_variables'] if col not in ['sample','weight', 'scaled_weight','eventNumber']]
-    enc_dim = [len(useful_columns),8,6]
-    dec_dim = [6,8,len(useful_columns)]
-    z_dim = 4
-    model_type = conf['model_type']
+    dh = DatasetHandler(conf, job_name='TestRun')
+    train, val, test = dh.split_dataset(use_val=dh.config['validation_set'], 
+                use_eventnumber=dh.config.get('use_eventnumber',None))
     
-    if model_type == 'AE':
-        model = AE(enc_dim, dec_dim, z_dim)
-    elif model_type == 'VAE':
-        model = VAE(enc_dim, dec_dim, z_dim)
-        
-    elif model_type == 'norm_flow':
-        model = NormFlow(len(useful_columns))
+    train_data = data_set(train)
+    test_data = data_set(test)
+    train_loader = DataLoader(train_data, batch_size=dh.config['batch_size'], shuffle=True)    
+    test_loader = DataLoader(test_data, batch_size=1)
+    
+    if len(val) != 0:
+        val_data = data_set(val)
+        val_loader = DataLoader(val_data, batch_size=2056)
+    else:
+        val_loader=None
     
     
-    #Train
-    t = Trainer(model, config=args.config)
-    t.run()
+    #Train the model
+    t = Trainer(model, config=conf, output_dir=dh.output_dir)
+    model = t.train(train_loader, val_loader=val_loader)
+    
     
     
 

@@ -8,7 +8,8 @@ import os
 from preprocessing.dataset import data_set
 from torch.utils.data import DataLoader
 import argparse
-
+import torch
+import numpy as np
 
 
 if __name__ == '__main__':
@@ -20,56 +21,99 @@ if __name__ == '__main__':
                         default="configs/training_config.yaml", required=False)
     parser.add_argument("-r","--Region",action="store", help="Set the region to config use, default is to use the config", 
                         default=None, required=False, type=str)
+    parser.add_argument("-n","--NormFlows",action="store", help="Set whether to use normalising flows config, use in conjuction with region", default=False, required=False, type=bool)
     parser.add_argument("-j","--JobName",action="store", help="Set the job name, for outputting to a given folder", 
                         default=None, required=False, type=str)
-    
+    parser.add_argument("-t","--NoTrain",action="store", help="Choose whether to train the model or not", 
+                        default=False, required=False, type=str)
+    parser.add_argument("-e","--EvenOrOdd",action="store", help="Choose whether to train the model on Even or Odd event numbers", 
+                        default=False, required=False, type=str)
     args = parser.parse_args()
     conf = args.inputConfig
     
     if args.Region:
-        conf = f"configs/training_configs/Regions/{args.Region}/training_config.yaml"
+        if args.NormFlows:
+            conf = f"configs/training_configs/Regions/{args.Region}/nf_config.yaml"
+        else:
+            conf = f"configs/training_configs/Regions/{args.Region}/training_config.yaml"
     
     
     # Make model
     from model.model_getter import get_model
     model = get_model(conf)
-    
-   
     print(model)
     
+    
     #Get the dataset
-    #Make input variable plots ? 
-    #Get signal and bkg?
     dh = DatasetHandler(conf, job_name=args.JobName)
+    
+    #Use flag here to set even or odd
+    if args.EvenOrOdd == 'Even':
+        dh.config['even_or_odd'] = 'Even'
+    elif args.EvenOrOdd == 'Odd':
+        dh.config['even_or_odd'] = 'Odd'
+    
     train, val, test = dh.split_dataset(use_val=dh.config['validation_set'], 
                 use_eventnumber=dh.config.get('use_eventnumber',None))
     
     
+    sum_train_w = train['weight'].sum()
+    sum_val_w = val['weight'].sum()
+    sum_test_w = test['weight'].sum()
     
-    #TODO: Add plotting of input variables here?
+    out_str = [f"Total sum of weights: {sum_train_w + sum_val_w + sum_test_w}\n"]
+    out_str.append(f"Total sum of train: {sum_train_w}\n")
+    out_str.append(f"Total sum of val: {sum_val_w}\n")
+    out_str.append(f"Total sum of test: {sum_test_w}\n")
+    
+    with open(os.path.join(dh.output_dir, 'TrainWeightSummary.txt'),'w') as f:
+        f.writelines(out_str)
+    
+    
     
     train_data = data_set(train)
     test_data = data_set(test)
     train_loader = DataLoader(train_data, batch_size=dh.config['batch_size'], shuffle=True)    
-    test_loader = DataLoader(test_data, batch_size=1)
+    test_loader = DataLoader(test_data, batch_size=2048)
     
     if len(val) != 0:
         val_data = data_set(val)
-        val_loader = DataLoader(val_data, batch_size=1)
+        val_loader = DataLoader(val_data, batch_size=2048)
     else:
         val_loader=None
     
     
     #Train the model
-    t = Trainer(model, config=conf, output_dir=dh.output_dir)
-    epoch_loss,epoch_logloss, val_loss = t.train_model(train_loader, val_loader=val_loader)
+    t = Trainer(model, config=dh.config, output_dir=dh.output_dir)
+    
+    if not args.NoTrain:
+        model = t.train(train_loader, val_loader=val_loader)
+        
+    else:
+        #Try loading model from somewhere...
+        with open('evaluate/region_settings/nf_FinalRun.yaml', 'r') as f:
+            run_dirs = yaml.safe_load(f)
+            
+        if t.config['even_or_odd'] =='Even':
+            #Load the model using the 
+            path_choice = 'even_path'
+            base_dir = 'even_base_dir'
+        else:
+            #Load the model using the 
+            path_choice = 'odd_path'
+            base_dir = 'odd_base_dir'
+            
+        dict_path = os.path.join(run_dirs[base_dir], run_dirs['regions'][args.Region][path_choice])
+        model.load_state_dict(torch.load(os.path.join(dict_path,'model_state_dict.pt')))
     
     
     #Test the model
-    tester = Tester(config=conf)
+    tester = Tester(config=t.config)
     tester.out_dir = t.output_dir
-    output = tester.evaluate_vae(t.model, test_loader)
+    output = tester.evaluate(model, test_loader)
     
+    #Evaluate over val
+    val_output = tester.evaluate(model, val_loader)
     
     #------------------------------------------------------------------------
     # Format the output
@@ -88,57 +132,65 @@ if __name__ == '__main__':
         f.writelines(model_info)
         
     with open(os.path.join(t.output_dir,'saved_outputs.pkl'), 'wb') as f:
+        pickle.dump(val_output, f)
+        
+    with open(os.path.join(t.output_dir,'saved_val_outputs.pkl'), 'wb') as f:
         pickle.dump(output, f)
         
+    if t.config['model_type'] == 'NF':
+        
+        min_test = min(output['ad_score'])
+        max_test = max(output['ad_score'])
+        
+        min_val = min(val_output['ad_score'])
+        max_val = max(val_output['ad_score'])
+        
+        prob_min = min(min_test,min_val)
+        prob_max = max(max_test,max_val)
+        
+        #Also add the percentiles of these...
+        all_scores = np.append(output['ad_score'], val_output['ad_score'])
+        percentile1 = np.percentile(all_scores, 1)
+        percentile99 = np.percentile(all_scores,99)
+        
+        percentile05 = np.percentile(all_scores, 0.5)
+        percentile995 = np.percentile(all_scores,99.5)
+        
+        percentile01 = np.percentile(all_scores, 0.1)
+        percentile999 = np.percentile(all_scores, 99.9)
+        
+        #Get the minimum of the val and test output's 
+        scale_strs = []
+        scale_strs.append("Scaled NF scores using: \n")
+        scale_strs.append(f"Test min_prob: {min_test}\n")
+        scale_strs.append(f"Test max_prob: {max_test}\n")
+        scale_strs.append(f"Val min_prob: {min_val}\n")
+        scale_strs.append(f"Val max_prob: {max_val}\n")
+        scale_strs.append(f"Use for scaling: {prob_min} , {prob_max}\n")
+        scale_strs.append(f"Percentiles1_99: {percentile1} , {percentile99}\n")
+        scale_strs.append(f"Percentiles05_995: {percentile05} , {percentile995}\n")
+        scale_strs.append(f"Percentiles01_999: {percentile01} , {percentile999}\n")
+        with open(os.path.join(t.output_dir,'scalers','NF_likelihood_scaling.txt'),'w') as f:
+            f.writelines(scale_strs)
     
     #try:
     print(f"Loading signal models...")
-    sig_dh = DatasetHandler(conf, scalers=dh.scalers)
+    sig_dh = DatasetHandler(conf, scalers=dh.scalers, out_dir=t.output_dir)
     sig_data = data_set(sig_dh.data)
-    sig_loader = DataLoader(sig_data, batch_size=1, shuffle=True)
-    sig_output = tester.evaluate_vae(t.model, sig_loader)
+    sig_loader = DataLoader(sig_data, batch_size=2048, shuffle=True)
+    sig_output = tester.evaluate(t.model, sig_loader)
 
     with open(os.path.join(t.output_dir,'saved_signal_outputs.pkl'), 'wb') as f:
         pickle.dump(sig_output, f)
 
-    #except:
-    #    print("Couldn't run over signal data... likely 0 signal events in region.")
-    #    sig_output=None
-        
+   
+    out_plots = t.config.get('output_plots' , None)
     
-    outplots  = {
-        'loss_hist' : True,
-        'logloss_hist' : True,
-        'logloss_sample_hist' : True,
-        'logloss_BkgvsSig_hist' : True,
-        'cdf_hist': True,
-        'chi2_plots' : True,
-        'nsig_vs_nbkg' : True,
-        'sig_vs_nbkg' : False,
-        'trexfitter_plot':True,
-        'inp_vs_out':True,
-    }
-    
-    tester.analyse_results(output, sig_output=sig_output, **outplots)
-    
-    
-    
-    # Add back into ntuples
-    # Needs to be able to do even and odd at the same time? 
-    
-    from feather.add_to_ntuple import NtupleWriter
-    nw = NtupleWriter()
-    
-    if t.config.get('add_to_ntuple',None):
-        
-        print("[INFO]   Adding outputs to ntuples")
-        if t.config['even_or_odd'] == 'Even':
-            nw.process_output(sig_output, t.config.get('base_dir', None), t.config.get('out_dir', None))
-            #nw.update_ntuples(sig_output, t.config.get('out_dir'))
-            #nw.process_output(sig_output, )
-        elif t.config['even_or_odd'] == 'Odd':
-            nw.update_ntuples(output, t.config.get('out_dir'))
-            nw.process_output(sig_output, t.config.get('vll_base_dir'), t.config.get('vll_out_dir'))
+    if not out_plots:
+        print("No output plots specified for evaluation run. Ending script...")
+    else:
+        ...
+        #tester.analyse_results(output, sig_output=sig_output, **out_plots)
     
     
     end = perf_counter()

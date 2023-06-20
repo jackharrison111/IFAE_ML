@@ -12,15 +12,18 @@ if __name__ == '__main__':
     
     os.chdir("/nfs/pic.es/user/j/jharriso/IFAE_ML")
 
-    job_name = "AllSigs_Odd"
+    job_name = "NF_FinalRun_Odd_Retry0Z0b0SFOS"
+    NORM_FLOW = True
+    
     
     regions = []
+    regions += ['0Z_0b_0SFOS']
+    #regions+=['2Z_0b']
+    #regions += ['0Z_0b_0SFOS', '0Z_0b_1SFOS', '0Z_0b_2SFOS',
+    #            '1Z_0b_1SFOS', '1Z_0b_2SFOS','2Z_0b',
+    #            '0Z_1b_0SFOS', '0Z_1b_1SFOS', '0Z_1b_2SFOS',
+    #            '1Z_1b_1SFOS', '1Z_1b_2SFOS', '2Z_1b']
     
-    regions += ['0Z_0b_0SFOS', '0Z_0b_1SFOS', '0Z_0b_2SFOS',
-                '1Z_0b_1SFOS', '1Z_0b_2SFOS',
-                '2Z_0b',
-                '0Z_1b_0SFOS', '0Z_1b_1SFOS', '0Z_1b_2SFOS',
-                '1Z_1b_1SFOS', '1Z_1b_2SFOS', '2Z_1b']
     
     #regions+=['1Z_0b_2SFOS']
     #regions += ['2Z_0b']
@@ -37,7 +40,10 @@ if __name__ == '__main__':
             os.makedirs(scriptdir)
 
         #Copy the config file to the scriptdir
-        conf_file = f"configs/training_configs/Regions/{region}/training_config.yaml"
+        if NORM_FLOW:
+            conf_file = f"configs/training_configs/Regions/{region}/nf_config.yaml"
+        else:
+            conf_file = f"configs/training_configs/Regions/{region}/training_config.yaml"
         new_conf_file = os.path.join(scriptdir, 'training_config.yaml')
         shutil.copyfile(conf_file, new_conf_file)
             
@@ -81,7 +87,7 @@ if __name__ == '__main__':
         condor.write(junk2)
         condor.write(junk3)
         condor.write("getenv = True\n")
-        condor.write(f"flavour = long\n")
+        condor.write(f"+flavour = 'long'\n")
         condor.write('request_cpus = 4\n')
         condor.write('request_memory = 8 GB\n')
         condor.write('on_exit_remove          = (ExitBySignal == False) && (ExitCode == 0)\n')

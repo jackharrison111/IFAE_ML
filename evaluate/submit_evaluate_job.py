@@ -8,43 +8,39 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-s", "--submit",default=False, help="Choose whether to submit the jobs or not", type=bool)
-    parser.add_argument("-p", "--parallel",default=False, help="Choose whether to submit the jobs in parallel", type=bool)
+    parser.add_argument("-p", "--parallel",default=True, help="Choose whether to submit the jobs in parallel", type=bool)
     args = parser.parse_args()
     split = args.parallel
     
     
     os.chdir("/nfs/pic.es/user/j/jharriso/IFAE_ML")
 
-    job_name = "MakeScoreAllRegions"
+    job_name = "LastEvaluationNF"
     
-    chosen_regions = ['1Z_0b_2SFOS']
+    #train_run_file = 'ae_AllSigs.yaml'
+    train_run_file = 'nf_FinalRun.yaml'
+    
+    
+    
+    
+    #chosen_regions = ['0Z_0b_2SFOS', '0Z_1b_2SFOS', '0Z_0b_1SFOS']
     
     chosen_regions = ['0Z_0b_0SFOS', '0Z_0b_1SFOS', '0Z_0b_2SFOS',
                     '1Z_0b_1SFOS', '1Z_0b_2SFOS', '2Z_0b',
                     '0Z_1b_0SFOS', '0Z_1b_1SFOS', '0Z_1b_2SFOS',
                     '1Z_1b_1SFOS', '1Z_1b_2SFOS', '2Z_1b']
     
-    
-    regions = define_regions()
-    
-    '''
-    
-    regions += ['0Z_0b_0SFOS', 
-                '0Z_0b_1SFOS', '0Z_0b_2SFOS',
-                '1Z_0b_1SFOS', '1Z_0b_2SFOS',
-                '0Z_1b_0SFOS', '0Z_1b_1SFOS', '0Z_1b_2SFOS',
-                '1Z_1b_1SFOS', '1Z_1b_2SFOS', '2Z_1b']
-    '''
-    
-    #regions += ['2Z_0b']
-    
-    #regions = ['VLLs/'+r for r in regions]
+    #chosen_regions = ['0Z_0b_1SFOS']
+    regions_file = os.path.join('evaluate/region_settings',train_run_file)
+    regions = define_regions(regions_file)
     
     flavour = "long"
 
     for chosen_region in chosen_regions:
+        
         region = chosen_region
-        vals = regions[chosen_region]
+        vals = regions['regions'][chosen_region]
+
         scriptdir = f"evaluate/jobs/{job_name}/{region}"
         if not os.path.exists(scriptdir):
             os.makedirs(scriptdir)
@@ -55,11 +51,15 @@ if __name__ == '__main__':
             os.makedirs(os.path.join(scriptdir,'outs'))
         if not os.path.exists(os.path.join(scriptdir,'errs')):
             os.makedirs(os.path.join(scriptdir,'errs'))
+            
+            
+        even_path = os.path.join(regions['even_base_dir'],vals['even_path'])
+        odd_path = os.path.join(regions['odd_base_dir'],vals['odd_path'])
         
         if split:
             
             s = 0
-            for i in range(vals['split_amount'], vals['total_files'],vals['split_amount']):
+            for i in range(regions['split_amount'], regions['total_files'], regions['split_amount']):
                 
                 #Make the executable file
                 sh_name = os.path.join(scriptdir,f"{region}_{s}_{i}.sh")
@@ -72,9 +72,10 @@ if __name__ == '__main__':
                 execute.write('mamba activate ML_env\n')
                 
                 feather_conf = f'configs/feather_configs/10GeV/{region}.yaml'
+            
 
                 #conf_file = f"configs/training_configs/Regions/{region}/training_config.yaml"
-                func = f"python evaluate/evaluate_model_v3.py -r {region} -e {vals['even_load_dir']} -o {vals['odd_load_dir']} --First {s} --Last {i} -f {feather_conf}"
+                func = f"python evaluate/evaluate_model_v3.py -r {region} -e {even_path} -o {odd_path} --First {s} --Last {i} -f {feather_conf}"
                 
                 #Need to set the feather file, the config file to use, 
                 
@@ -104,7 +105,9 @@ if __name__ == '__main__':
             execute.write('mamba activate ML_env\n')
 
             #conf_file = f"configs/training_configs/Regions/{region}/training_config.yaml"
-            func = f"python evaluate/evaluate_model.py -r {region} -e {vals['even_load_dir']} -o {vals['odd_load_dir']}"
+            func = f"python evaluate/evaluate_model.py -r {region} -e {even_path} -o {odd_path}"
+            func = f"python evaluate/evaluate_model_v3.py -r {region} -e {even_path} -o {odd_path} -f {feather_conf}"
+            
             execute.write(func)
 
             execute.write(' \n')

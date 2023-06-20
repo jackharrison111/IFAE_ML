@@ -9,7 +9,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+import math
 
 #Class to store the encoder 
 class Encoder(nn.Module):
@@ -121,16 +121,20 @@ class AE(nn.Module):
         self.encoder = Encoder(enc_dim, latent_dim)
         self.decoder = Decoder(dec_dim, latent_dim)
         
-    def loss_function(self, recon_x, x, mu, log_var, **kwargs):
-        #BCE = F.binary_cross_entropy(recon_x, x, reduction='sum')
-        MSE = F.mse_loss(x, recon_x, reduction='none')   #Works it out element-wise
-        MSE = torch.mean(MSE, dim=1)   #Average across features, leaving per-example MSE
-        return MSE, None, None
+    def loss_function(self, **kwargs):
+        
+        MSE = F.mse_loss(kwargs['data'], kwargs['reco'], reduction='none')
+        MSE = torch.mean(MSE, dim=1)
+        return {'loss' : MSE}
         
     def forward(self, data):
-        z,_ = self.encoder(data)
+        z, _ = self.encoder(data)
         prediction = self.decoder(z)
-        return prediction, z, _
+        return {'data' : data, 'reco': prediction, 'mu' : z}
+    
+    def get_anomaly_score(self, losses):
+        
+        return torch.log(losses['loss'])
         
 
         
