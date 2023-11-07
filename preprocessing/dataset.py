@@ -6,7 +6,7 @@ from torch.utils.data import Dataset
 class data_set(Dataset):
     
     def __init__(self, df):
-        metadata_cols = ['sample', 'eventNumber','label']
+        metadata_cols = ['sample', 'eventNumber','label', 'index']
         weight_cols = ['weight', 'scaled_weight']
 
         if 'label' not in df.columns:

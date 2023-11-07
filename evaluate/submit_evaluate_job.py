@@ -1,3 +1,13 @@
+'''
+Script to evaluate the ML model over a dataset
+
+Takes as input:
+- feather config:
+    - Used for getting the functions to make the input variables with
+
+'''
+
+
 import os
 import argparse
 from set_regions import define_regions
@@ -15,22 +25,37 @@ if __name__ == '__main__':
     
     os.chdir("/nfs/pic.es/user/j/jharriso/IFAE_ML")
 
-    job_name = "LastEvaluationNF"
+    Q2 = True
+    
+    job_name = "ReEvaluate_Q2_v3"
     
     #train_run_file = 'ae_AllSigs.yaml'
-    train_run_file = 'nf_FinalRun.yaml'
     
+    
+    if Q2:
+        train_run_file = 'nf_Q2.yaml'
+    else:
+        train_run_file = 'nf_NewYields.yaml'
     
     
     
     #chosen_regions = ['0Z_0b_2SFOS', '0Z_1b_2SFOS', '0Z_0b_1SFOS']
     
-    chosen_regions = ['0Z_0b_0SFOS', '0Z_0b_1SFOS', '0Z_0b_2SFOS',
-                    '1Z_0b_1SFOS', '1Z_0b_2SFOS', '2Z_0b',
-                    '0Z_1b_0SFOS', '0Z_1b_1SFOS', '0Z_1b_2SFOS',
-                    '1Z_1b_1SFOS', '1Z_1b_2SFOS', '2Z_1b']
+    #chosen_regions = ['0Z_0b_0SFOS', '0Z_0b_1SFOS', '0Z_0b_2SFOS',
+    #                '1Z_0b_1SFOS', '1Z_0b_2SFOS', '2Z_0b',
+    #                '0Z_1b_0SFOS', '0Z_1b_1SFOS', '0Z_1b_2SFOS',
+    #                '1Z_1b_1SFOS', '1Z_1b_2SFOS', '2Z_1b']
+    if Q2:
+        chosen_regions = ["Q2_0b", "Q2_0b_e", "Q2_0b_eu", "Q2_0b_u",
+                      "Q2_1b", "Q2_1b_e", "Q2_1b_eu", "Q2_1b_u"]
+
+    else:
+        chosen_regions =  ['0Z_0b_0SFOS', '0Z_0b_1SFOS', '0Z_0b_2SFOS',
+                        '1Z_0b_1SFOS', '1Z_0b_2SFOS', '2Z_0b',
+                        '0Z_1b_0SFOS', '0Z_1b_1SFOS', '0Z_1b_2SFOS',
+                        '1Z_1b_1SFOS', '1Z_1b_2SFOS', '2Z_1b']
     
-    #chosen_regions = ['0Z_0b_1SFOS']
+
     regions_file = os.path.join('evaluate/region_settings',train_run_file)
     regions = define_regions(regions_file)
     
@@ -65,14 +90,17 @@ if __name__ == '__main__':
                 sh_name = os.path.join(scriptdir,f"{region}_{s}_{i}.sh")
                 execute = open(sh_name, "w")
                 execute.write('#!/bin/bash \n')
-                execute.write('export PATH="/data/at3/scratch3/jharrison/miniconda3/envs/ML_env/bin/:$PATH" \n')
-                #execute.write('#!/data/at3/scratch3/jharrison/miniconda3/envs/ML_env/bin/python')
+                #execute.write('export PATH="/data/at3/scratch3/jharrison/miniforge3/envs/ML_env/bin/:$PATH" \n')
+                execute.write('export PATH="/data/at3/common/multilepton/miniforge3/envs/ML_env/bin/:$PATH" \n')
+                
                 execute.write('cd /nfs/pic.es/user/j/jharriso/IFAE_ML\n')               
                 execute.write('eval "$(conda shell.bash hook)"\n')
                 execute.write('mamba activate ML_env\n')
                 
                 feather_conf = f'configs/feather_configs/10GeV/{region}.yaml'
             
+                if Q2:
+                    feather_conf = f'configs/feather_configs/10GeV/Q2/{region}.yaml'
 
                 #conf_file = f"configs/training_configs/Regions/{region}/training_config.yaml"
                 func = f"python evaluate/evaluate_model_v3.py -r {region} -e {even_path} -o {odd_path} --First {s} --Last {i} -f {feather_conf}"
@@ -98,7 +126,8 @@ if __name__ == '__main__':
             sh_name = os.path.join(scriptdir,f"{region}.sh")
             execute = open(sh_name, "w")
             execute.write('#!/bin/bash \n')
-            execute.write('export PATH="/data/at3/scratch3/jharrison/miniconda3/envs/ML_env/bin/:$PATH" \n')
+            #execute.write('export PATH="/data/at3/scratch3/jharrison/miniconda3/envs/ML_env/bin/:$PATH" \n')
+            execute.write('export PATH="/data/at3/common/multilepton/miniforge3/envs/ML_env/bin/:$PATH" \n')
             #execute.write('#!/data/at3/scratch3/jharrison/miniconda3/envs/ML_env/bin/python')
             execute.write('cd /nfs/pic.es/user/j/jharriso/IFAE_ML\n')               
             execute.write('eval "$(conda shell.bash hook)"\n')

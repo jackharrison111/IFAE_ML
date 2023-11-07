@@ -12,18 +12,28 @@ if __name__ == '__main__':
     
     os.chdir("/nfs/pic.es/user/j/jharriso/IFAE_ML")
 
-    job_name = "MTLepMET_Rerun0Z2SFOS"
-    SIGNALS = False
+    job_name = "4lepQ2_NoFlavourSplit_Sigs"
+    SIGNALS = True
+    FIVELEP = False
+    Q2 = True
     
     regions = []
     
-    regions += ['0Z_0b_2SFOS', '0Z_1b_2SFOS']
-    '''
-    regions += ['0Z_0b_0SFOS', '0Z_0b_1SFOS', '0Z_0b_2SFOS',
-                '1Z_0b_1SFOS', '1Z_0b_2SFOS', '2Z_0b',
-                '0Z_1b_0SFOS', '0Z_1b_1SFOS', '0Z_1b_2SFOS',
-                '1Z_1b_1SFOS', '1Z_1b_2SFOS', '2Z_1b']
-    '''
+    #regions+= ['0Z_0b_mLEQe']
+    
+    #regions += ['0Z_0b_2SFOS', '0Z_1b_2SFOS']
+    if not FIVELEP and not Q2:
+        regions += ['0Z_0b_0SFOS', '0Z_0b_1SFOS', '0Z_0b_2SFOS',
+                    '1Z_0b_1SFOS', '1Z_0b_2SFOS', '2Z_0b',
+                    '0Z_1b_0SFOS', '0Z_1b_1SFOS', '0Z_1b_2SFOS',
+                    '1Z_1b_1SFOS', '1Z_1b_2SFOS', '2Z_1b']
+        
+        
+    if Q2:
+        #regions += ["0b_e", "0b_eu", "0b_u", "1b_e", "1b_eu", "1b_u"]
+        regions += ["0b", "1b"]
+
+    #regions = ["0Z_0b_mGte", "0Z_0b_mLEQe", "1Z_0b_mGte", "1Z_0b_mLEQe", "2Z_0b_mGte", "2Z_0b_mLEQe"]
     
     #regions += ['1Z_0b_2SFOS']
     
@@ -39,6 +49,12 @@ if __name__ == '__main__':
         
         if SIGNALS:
             conf_file = f"configs/feather_configs/10GeV/VLLs/{region}.yaml"
+        if FIVELEP:
+            conf_file = f"configs/feather_configs/10GeV/5lep/{region}.yaml"
+        if Q2:
+            conf_file = f"configs/feather_configs/10GeV/Q2/{region}.yaml"
+            if SIGNALS and Q2:
+                conf_file = f"configs/feather_configs/10GeV/Q2/VLLs/{region}.yaml"
         
         new_conf_file = os.path.join(scriptdir, 'feather_config.yaml')
         shutil.copyfile(conf_file, new_conf_file)
@@ -58,7 +74,7 @@ if __name__ == '__main__':
         execute.write(func)
                        
         execute.write(' \n')
-        execute.write('mamba deactivate \n')
+        execute.write('conda deactivate \n')
         execute.close()
         print(f"chmodding: {sh_name}")
         os.system(f"chmod +x {sh_name}")

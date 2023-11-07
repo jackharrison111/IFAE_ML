@@ -5,14 +5,14 @@ out_folder: '2Z_1b_NFs'
 
 
 #Samples
-samples_path: '/data/at3/scratch3/multilepton/VLL_production/feather'
+samples_path: '/data/at3/common/multilepton/VLL_production/feather/4lepQ0'
 feather_file : '2Z_1b_10GeV.ftr'
 signal_file: '2Z_1b_Sigs_10GeV.ftr'
 
 
 #Evaluating to ntuple
-ntuple_path: '/data/at3/scratch3/multilepton/VLL_production/nominal'
-ntuple_outpath: '/data/at3/scratch3/multilepton/VLL_production/evaluations'
+ntuple_path: '/data/at3/common/multilepton/VLL_production/nominal'
+ntuple_outpath: '/data/at3/common/multilepton/VLL_production/evaluations'
 
 #Outputting to ntuple
 add_to_ntuple: False
@@ -24,7 +24,7 @@ Train : True
 train_size: -1
 batch_size : 1024
 learning_rate : 0.00001
-num_epochs : 2000
+num_epochs : 3000
 weight_decay: 0.00001
 optimizer: 'Adam'
 test_dump : False
@@ -76,7 +76,8 @@ training_variables:     ['met_met',
     'sumPsbtag',
         'MtLepMet',
     'MT_otherllMET',
-    'MT_ZllMET'
+    'MT_ZllMET',
+    'index'
 ]
 
  

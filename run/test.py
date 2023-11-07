@@ -75,6 +75,7 @@ class Tester():
                 #sc_weight = data_dict['scaled_weight']
                 evtNumber = data_dict['eventNumber']
                 weights = data_dict['weight']
+                indexes = data_dict['index']
                 
                 #Run results through model
                 
@@ -105,7 +106,7 @@ class Tester():
                 output.setdefault('weights', []).extend(weights.tolist())
                 #output.setdefault('log_loss', []).append(math.log(losses['loss'].item()))   #Don't do this as different models might fail
                 output.setdefault('eventNumber', []).extend(evtNumber.tolist())
-                
+                output.setdefault('index', []).extend(indexes.tolist())
                 
                 #We don't want to reorder the samples, so just flatten them and append?
                 output.setdefault('samples', []).extend(sample)

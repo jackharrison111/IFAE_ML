@@ -11,6 +11,11 @@ import argparse
 import torch
 import numpy as np
 
+# Example of how to run just an evaluation...
+# Make sure to have uncommented 
+#python run/run_all.py -n 1 -r 0Z_0b_0SFOS -j NF_FixedIndex_Even -t 1 -e Even
+
+
 
 if __name__ == '__main__':
     
@@ -28,6 +33,9 @@ if __name__ == '__main__':
                         default=False, required=False, type=str)
     parser.add_argument("-e","--EvenOrOdd",action="store", help="Choose whether to train the model on Even or Odd event numbers", 
                         default=False, required=False, type=str)
+    
+    parser.add_argument("-s","--nEpochs",action="store", help="Set number of epochs to run over", default=False, required=False, type=bool)
+    
     args = parser.parse_args()
     conf = args.inputConfig
     
@@ -52,6 +60,9 @@ if __name__ == '__main__':
         dh.config['even_or_odd'] = 'Even'
     elif args.EvenOrOdd == 'Odd':
         dh.config['even_or_odd'] = 'Odd'
+        
+    if args.nEpochs:
+        dh.config['num_epochs'] = args.nEpochs
     
     train, val, test = dh.split_dataset(use_val=dh.config['validation_set'], 
                 use_eventnumber=dh.config.get('use_eventnumber',None))
@@ -90,8 +101,9 @@ if __name__ == '__main__':
         model = t.train(train_loader, val_loader=val_loader)
         
     else:
+        
         #Try loading model from somewhere...
-        with open('evaluate/region_settings/nf_FinalRun.yaml', 'r') as f:
+        with open('evaluate/region_settings/nf_NewYields.yaml', 'r') as f:
             run_dirs = yaml.safe_load(f)
             
         if t.config['even_or_odd'] =='Even':
@@ -131,11 +143,17 @@ if __name__ == '__main__':
     with open(os.path.join(t.output_dir, 'model_description.txt'),'w') as f:
         f.writelines(model_info)
         
-    with open(os.path.join(t.output_dir,'saved_outputs.pkl'), 'wb') as f:
+    with open(os.path.join(t.output_dir,'New_saved_outputs_2.pkl'), 'wb') as f:
+        pickle.dump(output, f)
+    with open(os.path.join(t.output_dir,'New_saved_val_outputs_2.pkl'), 'wb') as f:
         pickle.dump(val_output, f)
         
-    with open(os.path.join(t.output_dir,'saved_val_outputs.pkl'), 'wb') as f:
-        pickle.dump(output, f)
+        
+    #with open(os.path.join(t.output_dir,'saved_outputs.pkl'), 'wb') as f:
+    #    pickle.dump(output, f)
+    #with open(os.path.join(t.output_dir,'saved_val_outputs.pkl'), 'wb') as f:
+    #    pickle.dump(val_output, f)
+        
         
     if t.config['model_type'] == 'NF':
         
@@ -159,6 +177,12 @@ if __name__ == '__main__':
         percentile01 = np.percentile(all_scores, 0.1)
         percentile999 = np.percentile(all_scores, 99.9)
         
+        
+        #Before using 99.9 => 0.1 try using 99.99 => 0.01
+        percentile001 = np.percentile(all_scores, 0.01)
+        proper_max_all = max(all_scores)
+        
+        
         #Get the minimum of the val and test output's 
         scale_strs = []
         scale_strs.append("Scaled NF scores using: \n")
@@ -170,6 +194,7 @@ if __name__ == '__main__':
         scale_strs.append(f"Percentiles1_99: {percentile1} , {percentile99}\n")
         scale_strs.append(f"Percentiles05_995: {percentile05} , {percentile995}\n")
         scale_strs.append(f"Percentiles01_999: {percentile01} , {percentile999}\n")
+        scale_strs.append(f"Best scaling: {-proper_max_all} , {-percentile001}\n")
         with open(os.path.join(t.output_dir,'scalers','NF_likelihood_scaling.txt'),'w') as f:
             f.writelines(scale_strs)
     
@@ -180,17 +205,18 @@ if __name__ == '__main__':
     sig_loader = DataLoader(sig_data, batch_size=2048, shuffle=True)
     sig_output = tester.evaluate(t.model, sig_loader)
 
-    with open(os.path.join(t.output_dir,'saved_signal_outputs.pkl'), 'wb') as f:
+    
+    with open(os.path.join(t.output_dir,'New_saved_signal_outputs_2.pkl'), 'wb') as f:
         pickle.dump(sig_output, f)
 
    
     out_plots = t.config.get('output_plots' , None)
     
+    #out_plots = False
     if not out_plots:
         print("No output plots specified for evaluation run. Ending script...")
     else:
-        ...
-        #tester.analyse_results(output, sig_output=sig_output, **out_plots)
+        tester.analyse_results(output, sig_output=sig_output, **out_plots)
     
     
     end = perf_counter()

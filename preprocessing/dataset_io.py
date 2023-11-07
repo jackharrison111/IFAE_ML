@@ -54,11 +54,17 @@ class DatasetHandler():
         self.get_dataset(self.data_path, chosen_samples=chosen_samples)
         
         if len(self.data)!= 0:
+            
             self.calculate_mcweight()
+            
+            self.add_additional_weight()
+            
             self.reduce_to_training_variables(self.config['training_variables'])
+            
             self.clean_dataset(
                 r_negative=self.config['remove_negative_weights'],
                 r_zero=self.config['remove_zero_weights'])
+            
             self.scale_variables(scalers=scalers)
         else:
             self.data = []
@@ -78,7 +84,7 @@ class DatasetHandler():
                 self.data = self.data[:self.config['train_size']]
         
         
-    #Function to calculate the MC weights from input datagframe
+    #Function to calculate the MC weights from input dataframe
     def calculate_mcweight(self, total_lum=138965.16):
 
         if len(self.data) == 0:
@@ -114,6 +120,39 @@ class DatasetHandler():
         self.data['weight'] = self.data['weight']*total_lum
 
     
+    def add_additional_weight(self):
+        
+        ###
+        # VV Njet 
+        ###
+        VV_njet_DSIDS = ['364250', '363489', '345705', '345706', '345715', '345718', '345723',
+                        '364253','364254', '364255',
+                         '364283', '364284','364285','364286','364287',
+                         '363355','363356','363357','363358','363359','363360'
+                        ]
+        njet_corrections = {}
+        factors = [0.965492, 0.835492, 0.769111, 0.725872, 0.694378, 0.669898]
+        
+        for ind, i in enumerate(range(1,7)):
+            print(f"Updating VV Njet {i} with factor: {factors[ind]}")
+
+            self.data.loc[(self.data['mcChannelNumber'].isin(VV_njet_DSIDS))&self.data['nJets_OR']==i, 'weight'] = factors[ind] * self.data.loc[(self.data['mcChannelNumber'].isin(VV_njet_DSIDS))&self.data['nJets_OR']==i, 'weight']
+
+        #>= 7:
+        self.data.loc[(self.data['mcChannelNumber'].isin(VV_njet_DSIDS))&self.data['nJets_OR']>=7, 'weight'] = 0.650040 * self.data.loc[(self.data['mcChannelNumber'].isin(VV_njet_DSIDS))&self.data['nJets_OR']>= 7, 'weight']
+        
+        
+        ###
+        # ggVV
+        ###
+        ggVV_DSIDs = ['345705', '345706', '345715', '345718', '345723']
+        
+        self.data.loc[(self.data['mcChannelNumber'].isin(ggVV_DSIDs)), 'weight'] = 1.7 * self.data.loc[(self.data['mcChannelNumber'].isin(ggVV_DSIDs)), 'weight']
+        
+        
+        ...
+    
+    
     def reduce_to_training_variables(self, training_variables):
         self.data = self.data[training_variables]
         
@@ -132,7 +171,8 @@ class DatasetHandler():
             # Check for duplicate rows
             before = len(self.data)
             self.data = self.data.drop_duplicates()
-            print(f"Removing duplicates: {before} -> {len(self.data)}")
+            if before != len(self.data):
+                print(f"Removed duplicates: {before} -> {len(self.data)}")
             
          
     
@@ -154,7 +194,7 @@ class DatasetHandler():
                 self.data.loc[:,'scaled_weight'] = self.data.loc[:,col]/self.data[col].sum()
                 continue
 
-            if col in ['sample','eventNumber']:
+            if col in ['sample','eventNumber', 'index']:
                 continue
                 
             scaler = StandardScaler() if scalers is None else scalers[col]

@@ -257,99 +257,10 @@ class VariableMaker():
                 df.loc[i,'other_mZll'] = df.loc[i,min_pair[1]]  
                 
             else:
-                
-                #print("Got through 0Z, 2SFOS selection without finding 0Z 2SFOS pair")
-                #print(df.loc[i,'lep_ID_0'], df.loc[i,'lep_ID_1'], df.loc[i,'lep_ID_2'], df.loc[i,'lep_ID_3'])
-                #print(df.loc[i,'Mll01'], df.loc[i,'Mll02'], df.loc[i,'Mll03'], df.loc[i,'Mll12'], df.loc[i,'Mll13'], df.loc[i,'Mll23'])
-                #print(min_pair)
-                #print(min_mass+91.2e3, 91.2e3-min_mass)
-                #print(df.loc[i, 'best_Zllpair'], df.loc[i, 'best_mZll'], df.loc[i, 'other_Zllpair'], df.loc[i, 'other_mZll'])
-                #print(df.iloc[i])
                 ...
                    
         return df
-        '''
-        #For the 2e2m case:
-        if df.loc[i,'quadlep_type'] == 3:
-
-            #If 2SFOS:
-            if df.loc[i,'lep_ID_0'] == -df.loc[i,'lep_ID_1'] and df.loc[i,'lep_ID_2'] == -df.loc[i,'lep_ID_3']:
-
-                #Skip if there's a Z
-                if abs(df.loc[i,'Mll01']-91.2e3)<10e3 or abs(df.loc[i,self.pairings['Mll01']]-91.2e3)<10e3: 
-                    continue
-
-                #Pair into the closest Z mass
-                if abs(df.loc[i,'Mll01']-91.2e3)<abs(df.loc[i,self.pairings['Mll01']]-91.2e3):
-                    min_pair = ('Mll01', self.pairings['Mll01'])
-                else:
-                    min_pair =  (self.pairings['Mll01'],'Mll01')
-
-            elif df.loc[i,'lep_ID_0'] == -df.loc[i,'lep_ID_2'] and df.loc[i,'lep_ID_1'] == -df.loc[i,'lep_ID_3']:
-
-                #Skip if there's a Z
-                if abs(df.loc[i,'Mll02']-91.2e3)<10e3 or abs(df.loc[i,self.pairings['Mll02']]-91.2e3)<10e3: 
-                    continue
-
-                if abs(df.loc[i,'Mll02']-91.2e3)<abs(df.loc[i,self.pairings['Mll02']]-91.2e3):
-                    min_pair = ('Mll02', self.pairings['Mll02'])
-                else:
-                    min_pair =  (self.pairings['Mll02'],'Mll02')
-
-            elif df.loc[i,'lep_ID_0'] == -df.loc[i,'lep_ID_3'] and df.loc[i,'lep_ID_0'] == -df.loc[i,'lep_ID_2']:
-
-                #Skip if there's a Z
-                if abs(df.loc[i,'Mll03']-91.2e3)<10e3 or abs(df.loc[i,self.pairings['Mll03']]-91.2e3)<10e3: 
-                    continue
-
-                if abs(df.loc[i,'Mll03']-91.2e3)<abs(df.loc[i,self.pairings['Mll03']]-91.2e3):
-                    min_pair = ('Mll03', self.pairings['Mll03'])
-                else:
-                    min_pair =  (self.pairings['Mll03'],'Mll03')
-
-            else: #Not 2SFOS
-                continue
-
-        #For the 4e and 4m case
-        elif df.loc[i,'quadlep_type'] in [1,5]:
-
-            broken = False
-            for mll, pair in self.pairings.items():
-
-                #Check if there are Z's and skip
-                if abs(df.loc[i,mll]-91.2e3)<10e3 or abs(df.loc[i,pair]-91.2e3)<10e3: 
-                    broken=True
-                    break
-
-                #Only count self.pairings if they're oppositely charged
-                if df.loc[i,f"lep_ID_{mll[-2]}"]!= -df.loc[i,f"lep_ID_{mll[-1]}"]:
-                    continue
-
-                #Find mass that minimises the Msquared
-                msqr = pow(df.loc[i,mll],2) * pow(df.loc[i,pair],2)
-                if min_mass == -999 or msqr < min_mass:
-                    min_mass = msqr
-
-                    if abs(df.loc[i,mll]-91.2e3)<abs(df.loc[i,pair]-91.2e3):
-                        min_pair = (mll, pair)
-                    else:
-                        min_pair = (pair, mll)
-
-            if broken:
-                continue
-
-        else:
-            #Found non 2SFOS event
-            continue
-
-        if min_pair != -999:
-            df.loc[i,'best_Zllpair'] = min_pair[0]
-            df.loc[i,'other_Zllpair'] = min_pair[1]
-            df.loc[i,'best_mZll'] = df.loc[i,min_pair[0]]
-            df.loc[i,'other_mZll'] = df.loc[i,min_pair[1]]
-
-    return df
-    '''
+        
 
     def find_Z_pairs_0Z_1SFOS(self, df):
             
@@ -595,3 +506,41 @@ class VariableMaker():
             
         return df
         
+    def get_Qblind_pairs(self, df):
+            
+        #Take the closest same flavour pair to a Z mass as the Z pair
+        #There will always be a same flavour pair
+        for i in range(len(df)):
+            
+            best_pair = -999
+            best_mass = -999
+            other_pair = -999
+            other_mass = -999
+            
+            if abs(df.loc[i, "total_charge"]) != 2:
+                df.loc[i, 'best_Zllpair'] = best_pair
+                df.loc[i, 'best_mZll'] = best_mass
+                df.loc[i, 'other_Zllpair'] = other_pair
+                df.loc[i, 'other_mZll'] = other_mass
+                continue
+            
+            for col, pair in self.pairings.items():
+                
+                #Set the best pair and best mass if the lepton is the same flavour 
+                if abs(df.loc[i, f"lep_ID_{col[-2]}"]) == abs(df.loc[i,f"lep_ID_{col[-1]}"]):
+                    
+                    #Check if the mass is closer to the Z than the best_mass
+                    if best_mass == -999 or abs(best_mass - 91.2e3) > abs(df.loc[i,col]):
+                        
+                        best_mass = df.loc[i, col]
+                        best_pair = col
+                        other_mass = df.loc[i,pair]
+                        other_pair = pair
+              
+            df.loc[i, 'best_Zllpair'] = best_pair
+            df.loc[i, 'best_mZll'] = best_mass
+            df.loc[i, 'other_Zllpair'] = other_pair
+            df.loc[i, 'other_mZll'] = other_mass
+                
+            
+        return df

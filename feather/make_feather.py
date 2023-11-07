@@ -28,9 +28,13 @@ class FeatherMaker():
         self.region = self.master_config['region']
     
             
-    def get_features(self):
+    def get_features(self, use_default=False):
 
         infile = os.path.join('configs/variable_choices', self.region, self.master_config['variables_file'])
+        
+        if self.master_config.get('use_default',False):
+            infile = os.path.join('configs/variable_choices', self.master_config['variables_file'])
+            
         with open(infile, 'r') as file:
             vars = file.readlines()
             vars = [v.rstrip() for v in vars if v[0] != '#']
@@ -54,9 +58,13 @@ class FeatherMaker():
         return master_list
     
     
-    def extract_DSIDs(self, sample_file, output_json):
+    def extract_DSIDs(self, sample_file, output_json, use_default=False):
     
         s_file = os.path.join('configs/sample_choices', self.region, sample_file)
+        
+        if self.master_config.get('use_default',False):
+            s_file = os.path.join('configs/sample_choices', sample_file)
+        
         with open(s_file, 'r') as file:
             sample_txt = file.readlines()
 
@@ -76,7 +84,8 @@ class FeatherMaker():
                 all_samples.append(id)
             all_samples = list(set(all_samples))
             samples_dict[sample_name] = all_samples
-
+        if not os.path.exists(os.path.join('configs/sample_jsons', self.region)):
+            os.makedirs(os.path.join('configs/sample_jsons', self.region))
         o_json = os.path.join('configs/sample_jsons', self.region, output_json)
         with open(o_json,'w') as f:
             json.dump(samples_dict, f)
@@ -134,6 +143,7 @@ class FeatherMaker():
                         else:
                             data = pd.DataFrame(data, columns=variables) 
                             array = pd.concat([array,data])
+                            array.reset_index(inplace=True,drop=True)
                     print(f"Got {len(array)} data events.")
             else:
                 array = uproot.concatenate(nominals, variables, cut=cut_expr, library='np', allow_missing=True)
@@ -151,7 +161,6 @@ class FeatherMaker():
             #Make additional variables
             start = perf_counter()
             for i, func in enumerate(variable_funcs):
-                #print(f"Trying function: {func}")
                 array = func(array)
                 lap = perf_counter()
                 print(f"Finished function {i}. Time taken: {round(lap-start,2)}s")
@@ -159,7 +168,9 @@ class FeatherMaker():
             output_data = pd.concat([output_data, array])
             
             
+        output_data.reset_index(inplace=True, drop=True)
         output_data.reset_index(inplace=True)
+        
         save_name = os.path.join(self.master_config['feather_path'],
                             f"{self.master_config['region_save_name']}.ftr")
         output_data.to_feather(save_name)

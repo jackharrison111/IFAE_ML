@@ -12,18 +12,24 @@ if __name__ == '__main__':
     
     os.chdir("/nfs/pic.es/user/j/jharriso/IFAE_ML")
 
-    job_name = "NF_FinalRun_Odd_Retry0Z0b0SFOS"
+    job_name = "Q2_Resub1b_Odd"
     NORM_FLOW = True
-    
+    Q2 = True
+    EVEN_ODD = 'Odd'
+    num_epochs = 3000
     
     regions = []
-    regions += ['0Z_0b_0SFOS']
-    #regions+=['2Z_0b']
+    #regions += ['0Z_0b_0SFOS']
+    regions+=['0Z_1b_2SFOS']
     #regions += ['0Z_0b_0SFOS', '0Z_0b_1SFOS', '0Z_0b_2SFOS',
     #            '1Z_0b_1SFOS', '1Z_0b_2SFOS','2Z_0b',
     #            '0Z_1b_0SFOS', '0Z_1b_1SFOS', '0Z_1b_2SFOS',
     #            '1Z_1b_1SFOS', '1Z_1b_2SFOS', '2Z_1b']
     
+    if Q2:
+        #regions = ["Q2_0b_e", "Q2_0b_eu", "Q2_0b_u","Q2_1b_e", "Q2_1b_eu", "Q2_1b_u"]
+        #regions = ["Q2_0b", "Q2_1b"]
+        regions = ["Q2_1b","Q2_1b_e", "Q2_1b_eu", "Q2_1b_u"]
     
     #regions+=['1Z_0b_2SFOS']
     #regions += ['2Z_0b']
@@ -58,7 +64,7 @@ if __name__ == '__main__':
         execute.write('mamba activate ML_env\n')
               
         
-        func = f"python run/run_all.py -i {new_conf_file} -j {job_name}"
+        func = f"python run/run_all.py -i {new_conf_file} -j {job_name} -e {EVEN_ODD}"
         execute.write(func)
                        
         execute.write(' \n')
@@ -73,7 +79,7 @@ if __name__ == '__main__':
         condor = open(os.path.join(scriptdir,"condor_submit.sub"), "w")
         name = f"name  = {region}\n"
         junk = f"executable  = $(name)\n"
-        batch_name = f"JobBatchName = {region}\n"
+        batch_name = f"JobBatchName = {region}_{EVEN_ODD}\n"
         condor.write(name)
         condor.write(junk)
         condor.write(batch_name)

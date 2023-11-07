@@ -8,7 +8,7 @@ def get_model(conf="configs/training_config.yaml"):
     
     conf = load_yaml_config(conf)
     
-    useful_columns = [col for col in conf['training_variables'] if col not in ['sample','weight', 'scaled_weight', 'eventNumber']]
+    useful_columns = [col for col in conf['training_variables'] if col not in ['sample','weight', 'scaled_weight', 'eventNumber', 'index']]
     inp_dim = len(useful_columns)
     
     
