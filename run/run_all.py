@@ -81,7 +81,6 @@ if __name__ == '__main__':
         f.writelines(out_str)
     
     
-    
     train_data = data_set(train)
     test_data = data_set(test)
     train_loader = DataLoader(train_data, batch_size=dh.config['batch_size'], shuffle=True)    
@@ -130,6 +129,7 @@ if __name__ == '__main__':
     #------------------------------------------------------------------------
     # Format the output
     #------------------------------------------------------------------------
+
     import shutil
     shutil.copy(conf, os.path.join(t.output_dir, 'config.yaml'))
         
@@ -140,19 +140,27 @@ if __name__ == '__main__':
     Optimizer:
     {t.optimizer}
     """
+
     with open(os.path.join(t.output_dir, 'model_description.txt'),'w') as f:
         f.writelines(model_info)
         
-    with open(os.path.join(t.output_dir,'New_saved_outputs_2.pkl'), 'wb') as f:
-        pickle.dump(output, f)
-    with open(os.path.join(t.output_dir,'New_saved_val_outputs_2.pkl'), 'wb') as f:
-        pickle.dump(val_output, f)
-        
-        
-    #with open(os.path.join(t.output_dir,'saved_outputs.pkl'), 'wb') as f:
+
+    #TODO: SAVE TO COMMON AREA INSTEAD
+    dataset_savedir = '/data/at3/common/multilepton/VLL_production/trainings'
+    dataset_jobdir = os.path.join(dataset_savedir, args.JobName)
+
+    #with open(os.path.join(t.output_dir,'New_saved_outputs_2.pkl'), 'wb') as f:
     #    pickle.dump(output, f)
-    #with open(os.path.join(t.output_dir,'saved_val_outputs.pkl'), 'wb') as f:
+    #with open(os.path.join(t.output_dir,'New_saved_val_outputs_2.pkl'), 'wb') as f:
     #    pickle.dump(val_output, f)
+
+    if not os.path.exists(dataset_jobdir):
+        os.makedirs(dataset_jobdir)
+        
+    with open(os.path.join(dataset_jobdir,'saved_outputs.pkl'), 'wb') as f:
+        pickle.dump(output, f)
+    with open(os.path.join(dataset_jobdir,'saved_val_outputs.pkl'), 'wb') as f:
+        pickle.dump(val_output, f)
         
         
     if t.config['model_type'] == 'NF':
@@ -205,8 +213,8 @@ if __name__ == '__main__':
     sig_loader = DataLoader(sig_data, batch_size=2048, shuffle=True)
     sig_output = tester.evaluate(t.model, sig_loader)
 
-    
-    with open(os.path.join(t.output_dir,'New_saved_signal_outputs_2.pkl'), 'wb') as f:
+    #TODO: SAVE TO COMMON
+    with open(os.path.join(dataset_jobdir,'saved_signal_outputs.pkl'), 'wb') as f:
         pickle.dump(sig_output, f)
 
    

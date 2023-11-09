@@ -25,10 +25,18 @@ if __name__ == '__main__':
     
     os.chdir("/nfs/pic.es/user/j/jharriso/IFAE_ML")
 
-    Q2 = True
+    Q2 = False
     
-    job_name = "ReEvaluate_Q2_v3"
-    
+    job_name = "EvalShalini_Ntuples_Q0_v5"
+
+    #Set to false otherwise:
+    #Shalini's ntuples:
+    ntuplePathIn = '/data/at3/scratch2/multilepton/Shalini_ntuples/VLL_newsamples_NN'
+    ntuplePathOut = '/data/at3/common/multilepton/VLL_production/evaluations/Shalini_ntuples'
+
+    #ntuplePathIn = '/data/at3/common/multilepton/VLL_production/nominal'
+    #ntuplePathOut = ''
+
     #train_run_file = 'ae_AllSigs.yaml'
     
     
@@ -38,6 +46,7 @@ if __name__ == '__main__':
         train_run_file = 'nf_NewYields.yaml'
     
     
+
     
     #chosen_regions = ['0Z_0b_2SFOS', '0Z_1b_2SFOS', '0Z_0b_1SFOS']
     
@@ -103,7 +112,7 @@ if __name__ == '__main__':
                     feather_conf = f'configs/feather_configs/10GeV/Q2/{region}.yaml'
 
                 #conf_file = f"configs/training_configs/Regions/{region}/training_config.yaml"
-                func = f"python evaluate/evaluate_model_v3.py -r {region} -e {even_path} -o {odd_path} --First {s} --Last {i} -f {feather_conf}"
+                func = f"python evaluate/evaluate_model_v3.py -r {region} -e {even_path} -o {odd_path} --First {s} --Last {i} -f {feather_conf} -ni {ntuplePathIn} -no {ntuplePathOut}"
                 
                 #Need to set the feather file, the config file to use, 
                 
@@ -134,8 +143,8 @@ if __name__ == '__main__':
             execute.write('mamba activate ML_env\n')
 
             #conf_file = f"configs/training_configs/Regions/{region}/training_config.yaml"
-            func = f"python evaluate/evaluate_model.py -r {region} -e {even_path} -o {odd_path}"
-            func = f"python evaluate/evaluate_model_v3.py -r {region} -e {even_path} -o {odd_path} -f {feather_conf}"
+            #func = f"python evaluate/evaluate_model.py -r {region} -e {even_path} -o {odd_path}"
+            func = f"python evaluate/evaluate_model_v3.py -r {region} -e {even_path} -o {odd_path} -f {feather_conf} -ni {ntuplePathIn} -no {ntuplePathOut}"
             
             execute.write(func)
 

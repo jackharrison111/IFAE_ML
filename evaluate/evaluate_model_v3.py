@@ -119,6 +119,13 @@ if __name__ == '__main__':
     parser.add_argument("-last","--Last",action="store", help="Set the last file to run over", 
                         default=-1, required=False, type=int)
     
+    parser.add_argument("-ni","--NtuplePathIn",action="store", help="Pass a custom ntuple path for all to read", 
+                        default=False, required=False)
+    
+    parser.add_argument("-no","--NtuplePathOut",action="store", help="Pass a custom ntuple path for outputting", 
+                        default=False, required=False)
+
+
     args = parser.parse_args()
     
     
@@ -155,9 +162,15 @@ if __name__ == '__main__':
 
 
     #Set a new ntuple path
+    #train_conf['ntuple_path'] = '/data/at3/common/multilepton/VLL_production/nominal'
 
-    train_conf['ntuple_path'] = '/data/at3/common/multilepton/VLL_production/nominal'
-    train_conf['ntuple_outpath'] = '/data/at3/common/multilepton/VLL_production/evaluations'
+    if args.NtuplePathIn:
+        #train_conf['ntuple_path'] = '/data/at3/scratch2/multilepton/Shalini_ntuples/VLL_newsamples_NN'
+        train_conf['ntuple_path'] = args.NtuplePathIn
+
+    if args.NtuplePathOut:
+        #train_conf['ntuple_outpath'] = '/data/at3/common/multilepton/VLL_production/evaluations/Shalini_ntuples'
+        train_conf['ntuple_outpath'] = args.NtuplePathOut
 
     
     SCORE_NAME =  f"Score_{region}_{train_conf['model_type']}"
@@ -233,8 +246,9 @@ if __name__ == '__main__':
     
     
     #Loop over predefined number of files
+    print(train_conf['ntuple_path'])
     all_root_files = find_root_files(train_conf['ntuple_path'], '', [])
-    
+    print(all_root_files, " =allfiles")
     for i, file in enumerate(all_root_files):
         
         if i < first and first!=-1:

@@ -45,6 +45,8 @@ def find_root_files(root, directory, master_list=[]):
             if '.root' in f:
                 master_list.append(os.path.join(os.path.join(root,directory),f))
                 continue
+            elif not os.path.isdir(os.path.join(root,directory,f)):
+                continue
             else:
                 master_list = find_root_files(os.path.join(root,directory),f, master_list)
         return master_list

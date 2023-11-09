@@ -111,7 +111,7 @@ if __name__ == "__main__" :
     
     #Use in_files as all the files in the AllSamples folder
     in_files = find_root_files(base_files, '')
-    
+    print(in_files)
     print("Running check for missing files...")
     missing_files = 0
     #Add a scan at the beginning that checks for all the right files
@@ -119,11 +119,12 @@ if __name__ == "__main__" :
         
         root_file_path = os.path.relpath(file, base_files)
         for region in region_folders:
-            region_file = os.path.join(base_dir,region,root_file_path)
             
+            region_file = os.path.join(base_dir,region,root_file_path)
             if not os.path.exists(region_file):
                 print(f"ERROR:: Couldn't find file {region_file}")
                 missing_files+=1
+                
                 
     if missing_files > 0:
         raise Exception(f"TERMINATING:: {missing_files} missing input files.")

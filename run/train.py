@@ -116,29 +116,37 @@ class Trainer():
         epoch_losses, epoch_mses, epoch_klds = [], [], []
         weighted_epoch_losses = []
         
-        self.best_val_loss = None
+        self.best_val_loss = None  #float('inf')
         self.best_val_epoch = None
         
         epoch_losses = {}
         weighted_losses = {}
-        
-        #epoch_validation_losses, validation_loglosses = {}, {}
-        #validation_losses_weighted, validation_loglosses_weighted = {}, {}
-
         epoch_val_losses, epoch_val_losses_avg, epoch_val_weighted_losses, sum_val_losses = {}, {}, {}, {}
 
         
         weight_loss = self.config['weight_loss']
         use_abs_weights = self.config.get('absolute_weights',True)
         use_scaled = self.config.get('use_scaled', True)
+        trim_weight = self.config.get('use_scaled', False)
+        stopping_delta = self.config.get('stopping_delta', 0)
+        early_stopping = self.config.get('early_stopping', True)
+        patience = self.config.get('patience', 10)
         
         s = perf_counter()
+
+
+        #TODO: ALLOW WEIGHTS TO BE SCALED TO MAX 0.5 
+        early_stopping_counter = 0
+        stop_early = False
+
         for epoch in range(self.config['num_epochs']):
             
+            if stop_early:
+                break
             l1 = perf_counter()
             print(f"Epoch {epoch}:")
             epoch_info, weighted_epoch_info = {}, {}
-            
+
             
             self.model.train()
             for idx, data_dict in enumerate(dataloader):
@@ -160,22 +168,17 @@ class Trainer():
                 
                 #Get the loss
                 losses = self.model.loss_function(**outputs)
-            
-                
-                # Feeding a batch into the network to obtain the output image, mu, and logVar
-                #out, mu, logVar = self.model(data)
-                #loss, mse, kld = self.model.loss_function(out, data, mu, logVar, variational=self.model.variational, beta=self.config["beta"])
-                
-                
                 loss = losses['loss']
                 
                 epoch_info['loss'] = epoch_info.get('loss', 0) + torch.sum(loss).item()
                 
-                
+                #TODO: INCLUDE WEIGHT TRIMMING TO 0.5
                 
                 #Multiply the loss by the weights when updating
                 if weight_loss and not use_abs_weights:
                     loss = torch.dot(self.config['added_weight_factor']*weight, loss) 
+                elif weight_loss and trim_weight:
+                    ...
                 elif use_abs_weights:
                     loss = torch.dot(torch.abs(weight),loss)
                 else:
@@ -237,8 +240,6 @@ class Trainer():
                             weight = data_dict['weight']
                         
                         samples = data_dict['sample']
-        
-
                         data = data.to(self.device)
                         
                         #Feed data into model
@@ -247,15 +248,9 @@ class Trainer():
                         #Get the loss
                         losses = self.model.loss_function(**outputs)
                     
-                        #out, mu, logVar = self.model(data)
-                        #loss, mse, kld = self.model.loss_function(out, data, mu, logVar, 
-                        #                                    variational=self.model.variational, beta=self.config["beta"])
-                        #num_examples = loss.shape[0]
-                        
-                        #Figure out how to do this in batches
-                        
+                        #TODO: Figure out how to do this in batches
                         loss = losses['loss']
-                        weighted_loss = self.config['added_weight_factor']*weight*loss if  weight_loss else weight*loss
+                        weighted_loss = self.config['added_weight_factor']*weight*loss if weight_loss else weight*loss
                         
                         sum_val_loss += torch.sum(loss).item()
                         sum_val_counts += len(loss)
@@ -267,6 +262,7 @@ class Trainer():
                         for sample in set(samples):
                         
                             #Get the indices that are this sample
+                            #TODO: Add safety check for if there are no events? 
                             inds = np.where(np.isin(samples,[sample]))[0]
 
                             #Sum the loss of these samples
@@ -303,6 +299,26 @@ class Trainer():
                         self.best_val_epoch = epoch
                         self.best_val_loss = sum_val_loss/sum_val_counts
                         self.best_optimizer = copy.deepcopy(self.optimizer)
+
+
+                    #Decide on early stopping condition
+                    #Add a patience and then a checking condition on the validation loss
+                    if early_stopping:
+
+                        #Check that the validation loss hasnt increased since X
+                        if len(sum_val_losses['Val.']) > 2:
+
+                            if sum_val_losses['Val.'][-1] > sum_val_losses['Val.'][-2] + stopping_delta:
+                                early_stopping_counter += 1
+                                print(f"Found early stopping increment:\n   Previous val loss: {sum_val_losses['Val.'][-2]} , Current val loss: {sum_val_losses['Val.'][-1]}")
+                            else:
+                                early_stopping_counter = 0
+                                
+                        if early_stopping_counter > patience:
+                            stop_early = True
+                            print(f"Stopping early on epoch {epoch} as patience of {patience} has been met...")
+
+
                     
             l2 = perf_counter()
             print(f"Finished epoch... time taken: {round(l2-l1,2)}s.")
@@ -317,6 +333,8 @@ class Trainer():
                 'sum_val_losses' : sum_val_losses}
                 
     
+    #TODO: DO THIS IN A WAY THAT MAKES IT LOOK NICE
+    #USE MPLHEP
     def make_training_outputs(self, **results):
         
         
@@ -417,7 +435,6 @@ class Trainer():
         train_results = self.train_model(train_loader, val_loader)
         
         self.save_training(train_results)
-        
         self.make_training_outputs(**train_results)
         
         print("Finished running training.")

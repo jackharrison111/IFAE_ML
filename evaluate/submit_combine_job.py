@@ -13,18 +13,21 @@ if __name__ == '__main__':
 
     parallel = args.parallel
     
-    total_files = 1900
+    total_files = 2000
     split_amount = 50
     
     os.chdir("/nfs/pic.es/user/j/jharriso/IFAE_ML")
 
     
-    job_name = "CombineAllScores_v2"
+    job_name = "RerunEval_v2"
     
     
-    base_dir = '/data/at3/scratch3/multilepton/VLL_production/evaluations'
-    base_files = '/data/at3/scratch3/multilepton/VLL_production/evaluations/CombineGridAttempt'
+    #base_dir = '/data/at3/scratch3/multilepton/VLL_production/evaluations'
+    #base_files = '/data/at3/scratch3/multilepton/VLL_production/evaluations/CombineGridAttempt'
     
+    base_dir = '/data/at3/common/multilepton/VLL_production/evaluations'
+    base_files = '/data/at3/common/multilepton/VLL_production/evaluations/Eval'
+
     flavour = "long"
     
     scriptdir = f"evaluate/jobs/{job_name}"
@@ -49,7 +52,8 @@ if __name__ == '__main__':
             sh_name = os.path.join(scriptdir,f"{job_name}_{s}_{i}.sh")
             execute = open(sh_name, "w")
             execute.write('#!/bin/bash \n')
-            execute.write('export PATH="/data/at3/scratch3/jharrison/miniconda3/envs/ML_env/bin/:$PATH" \n')
+            #execute.write('export PATH="/data/at3/scratch3/jharrison/miniconda3/envs/ML_env/bin/:$PATH" \n')
+            execute.write('export PATH="/data/at3/common/multilepton/miniforge3/envs/ML_env/bin/:$PATH" \n')
             execute.write('cd /nfs/pic.es/user/j/jharriso/IFAE_ML\n')               
             execute.write('eval "$(conda shell.bash hook)"\n')
             execute.write('mamba activate ML_env\n')
@@ -72,7 +76,8 @@ if __name__ == '__main__':
         sh_name = os.path.join(scriptdir,f"{job_name}.sh")
         execute = open(sh_name, "w")
         execute.write('#!/bin/bash \n')
-        execute.write('export PATH="/data/at3/scratch3/jharrison/miniconda3/envs/ML_env/bin/:$PATH" \n')
+        #execute.write('export PATH="/data/at3/scratch3/jharrison/miniconda3/envs/ML_env/bin/:$PATH" \n')
+        execute.write('export PATH="/data/at3/common/multilepton/miniforge3/envs/ML_env/bin/:$PATH" \n')
         execute.write('cd /nfs/pic.es/user/j/jharriso/IFAE_ML\n')               
         execute.write('eval "$(conda shell.bash hook)"\n')
         execute.write('mamba activate ML_env\n')

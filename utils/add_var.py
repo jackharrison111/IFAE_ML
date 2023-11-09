@@ -95,7 +95,7 @@ if __name__ == '__main__':
   save_dir = args.outputDir
 
   ROOT.gInterpreter.Declare(getNumOfIFFClassFlavour)
-  ROOT.EnableImplicitMT()
+  #ROOT.EnableImplicitMT() Don't use as shuffles outputs
   
   #Loop over predefined number of files
   #input_dir = '/data/at3/common/multilepton/VLL_production/nominal'
@@ -130,7 +130,7 @@ if __name__ == '__main__':
     end_branches=len([x for x in frame.GetColumnNames()])
     
     print(f"Finished running functions... added {end_branches-start_branches} branches.")
-
+    print(end_branches, " branches.")
     finalOutVars = ROOT.vector('string')()
     nBrnch=len([finalOutVars.push_back(x) for x in frame.GetColumnNames()])
 
@@ -146,6 +146,7 @@ if __name__ == '__main__':
 
     print(f"Saving file: {whole_out_string}")
     frame.Snapshot("nominal", whole_out_string, finalOutVars, opts)
+    del frame
 
 print("Finished running script... closing.")
 
