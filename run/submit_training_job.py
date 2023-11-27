@@ -1,6 +1,17 @@
 import os
 import argparse
 import shutil
+import datetime as dt
+
+def add_run_to_history(job_name, history_file):
+    if not os.path.exists(history_file):
+        f = open(history_file, "x")
+    with open(history_file, 'r') as file:
+        history = file.readlines()
+    history.append(job_name + ' : {} \n'.format(dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    with open(history_file, 'w') as file_out:
+        file_out.writelines(history)
+
 
 if __name__ == '__main__':
     
@@ -12,15 +23,23 @@ if __name__ == '__main__':
     
     os.chdir("/nfs/pic.es/user/j/jharriso/IFAE_ML")
 
-    job_name = "Q2_Resub1b_Odd"
+    #job_name = "BaseRun_Even_3kEpochs"
+    job_name = "ConfigCheck_0Z2SFOS_Even"
     NORM_FLOW = True
-    Q2 = True
-    EVEN_ODD = 'Odd'
+    Q2 = False
+    EVEN_ODD = 'Even'
     num_epochs = 3000
     
     regions = []
+    regions += ['0Z_0SFOS',
+                '0Z_1SFOS',
+                '0Z_2SFOS',
+                '1Z_1SFOS',
+                '1Z_2SFOS',
+                '2Z']
+    regions = ['0Z_0b_2SFOS']#,'0Z_1SFOS']
     #regions += ['0Z_0b_0SFOS']
-    regions+=['0Z_1b_2SFOS']
+    #regions+=['0Z_1b_2SFOS']
     #regions += ['0Z_0b_0SFOS', '0Z_0b_1SFOS', '0Z_0b_2SFOS',
     #            '1Z_0b_1SFOS', '1Z_0b_2SFOS','2Z_0b',
     #            '0Z_1b_0SFOS', '0Z_1b_1SFOS', '0Z_1b_2SFOS',
@@ -47,7 +66,9 @@ if __name__ == '__main__':
 
         #Copy the config file to the scriptdir
         if NORM_FLOW:
-            conf_file = f"configs/training_configs/Regions/{region}/nf_config.yaml"
+            #conf_file = f"configs/training_configs/Regions/{region}/nf_config.yaml"
+
+            conf_file = f"configs/training_configs/Regions/{region}/nf_config_Inclusive.yaml"
         else:
             conf_file = f"configs/training_configs/Regions/{region}/training_config.yaml"
         new_conf_file = os.path.join(scriptdir, 'training_config.yaml')
@@ -57,7 +78,8 @@ if __name__ == '__main__':
         sh_name = os.path.join(scriptdir,f"{region}.sh")
         execute = open(sh_name, "w")
         execute.write('#!/bin/bash \n')
-        execute.write('export PATH="/data/at3/scratch3/jharrison/miniconda3/envs/ML_env/bin/:$PATH" \n')
+        #execute.write('export PATH="/data/at3/scratch3/jharrison/miniconda3/envs/ML_env/bin/:$PATH" \n')
+        execute.write('export PATH="/data/at3/common/multilepton/miniforge3/envs/ML_env/bin/:$PATH" \n')
         #execute.write('#!/data/at3/scratch3/jharrison/miniconda3/envs/ML_env/bin/python')
         execute.write('cd /nfs/pic.es/user/j/jharriso/IFAE_ML\n')               
         execute.write('eval "$(conda shell.bash hook)"\n')
@@ -94,7 +116,7 @@ if __name__ == '__main__':
         condor.write(junk3)
         condor.write("getenv = True\n")
         condor.write(f"+flavour = 'long'\n")
-        condor.write('request_cpus = 4\n')
+        condor.write('request_cpus = 2\n')
         condor.write('request_memory = 8 GB\n')
         condor.write('on_exit_remove          = (ExitBySignal == False) && (ExitCode == 0)\n')
         condor.write('requirements = !regexp("AMD EPYC 7452",CPU_MODEL)\n')
@@ -104,6 +126,9 @@ if __name__ == '__main__':
     
         if args.submit:
             os.system(f"condor_submit {os.path.join(scriptdir, 'condor_submit.sub')}")
+
+            add_run_to_history(job_name, 'run/jobs/history.txt')
+
 
     
 

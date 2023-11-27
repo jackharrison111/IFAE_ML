@@ -122,23 +122,23 @@ class Trainer():
         epoch_losses = {}
         weighted_losses = {}
         epoch_val_losses, epoch_val_losses_avg, epoch_val_weighted_losses, sum_val_losses = {}, {}, {}, {}
-
+        sum_weighted_val_losses = {}
         
         weight_loss = self.config['weight_loss']
         use_abs_weights = self.config.get('absolute_weights',True)
         use_scaled = self.config.get('use_scaled', True)
-        trim_weight = self.config.get('use_scaled', False)
+
+        trim_weight = self.config.get('trim_weight', False)
         stopping_delta = self.config.get('stopping_delta', 0)
         early_stopping = self.config.get('early_stopping', True)
         patience = self.config.get('patience', 10)
         
         s = perf_counter()
 
-
-        #TODO: ALLOW WEIGHTS TO BE SCALED TO MAX 0.5 
         early_stopping_counter = 0
         stop_early = False
 
+        print("Running training for: ", self.config['num_epochs'], " epochs.")
         for epoch in range(self.config['num_epochs']):
             
             if stop_early:
@@ -177,12 +177,15 @@ class Trainer():
                 #Multiply the loss by the weights when updating
                 if weight_loss and not use_abs_weights:
                     loss = torch.dot(self.config['added_weight_factor']*weight, loss) 
-                elif weight_loss and trim_weight:
-                    ...
-                elif use_abs_weights:
+                
+                elif use_abs_weights and trim_weight: 
+                    tmp_loss = copy.deepcopy(loss.detach().numpy())
+                    loss = torch.dot(torch.abs(torch.clip(weight, min=-0.5,max=0.5)),loss)
+
+                elif use_abs_weights and not trim_weight:   #Should be default, weight trimming done in scaled weight making
                     loss = torch.dot(torch.abs(weight),loss)
                 else:
-                    torch.dot(weight, loss)
+                    loss = torch.dot(weight, loss)
                 
                 #Take the abs of weights
                 weighted_epoch_info['loss'] = weighted_epoch_info.get('loss', 0) + loss.item()
@@ -230,6 +233,7 @@ class Trainer():
 
                     val_losses, val_losses_weighted, val_counts = {}, {}, {}
                     sum_val_loss = 0
+                    weighted_sum_val_loss = 0
                     sum_val_counts = 0
                     for idx, data_dict in enumerate(val_loader):
                 
@@ -254,6 +258,19 @@ class Trainer():
                         
                         sum_val_loss += torch.sum(loss).item()
                         sum_val_counts += len(loss)
+
+                        #We want the weighted loss to remain per-sample
+                        if weight_loss and not use_abs_weights:
+                            weighted_loss = self.config['added_weight_factor']*weight*loss 
+                        elif use_abs_weights and trim_weight:  #Should be default
+                            weighted_loss = torch.abs(torch.clip(weight, min=-0.5,max=0.5))*loss
+                        elif use_abs_weights:
+                            weighted_loss = torch.abs(weight)*loss
+                        else:
+                            weighted_loss = weight*loss
+
+                        weighted_sum_val_loss += torch.sum(weighted_loss).item()
+                        
                         
                         if 'mse' in losses.keys():
                             mse = torch.sum(mse)
@@ -290,14 +307,21 @@ class Trainer():
                         epoch_val_weighted_losses.setdefault(group, []).append(val_losses_weighted[group])
                         
                     sum_val_losses.setdefault('Val.', []).append(sum_val_loss/sum_val_counts)
+
+                    sum_weighted_val_losses.setdefault('Val.', []).append(weighted_sum_val_loss/sum_val_counts)
                     
-                    print(f"      Validation Loss: {val_losses}")
-                    print(f"      Validation weighted: {val_losses_weighted}")
+                    print(f"      Validation Loss: {sum_val_loss/sum_val_counts}")
+                    print(f"      Validation weighted: {weighted_sum_val_loss/sum_val_counts}")
+                    print(f"      Validation Loss/Sample: {val_losses}")
+                    print(f"      Validation weighted/Sample: {val_losses_weighted}")
                 
-                    if self.best_val_loss is None or sum_val_loss/sum_val_counts < self.best_val_loss:
+                    #Changed to use weighted loss...
+                    #if self.best_val_loss is None or sum_val_loss/sum_val_counts < self.best_val_loss:
+                    if self.best_val_loss is None or weighted_sum_val_loss/sum_val_counts < self.best_val_loss:
                         self.best_model = copy.deepcopy(self.model)
                         self.best_val_epoch = epoch
-                        self.best_val_loss = sum_val_loss/sum_val_counts
+                        #self.best_val_loss = sum_val_loss/sum_val_counts
+                        self.best_val_loss = weighted_sum_val_loss/sum_val_counts
                         self.best_optimizer = copy.deepcopy(self.optimizer)
 
 
@@ -306,11 +330,11 @@ class Trainer():
                     if early_stopping:
 
                         #Check that the validation loss hasnt increased since X
-                        if len(sum_val_losses['Val.']) > 2:
+                        if len(sum_weighted_val_losses['Val.']) > 2:
 
-                            if sum_val_losses['Val.'][-1] > sum_val_losses['Val.'][-2] + stopping_delta:
+                            if sum_weighted_val_losses['Val.'][-1] > sum_weighted_val_losses['Val.'][-2] + stopping_delta:
                                 early_stopping_counter += 1
-                                print(f"Found early stopping increment:\n   Previous val loss: {sum_val_losses['Val.'][-2]} , Current val loss: {sum_val_losses['Val.'][-1]}")
+                                print(f"Found early stopping increment:\n   Previous val loss: {sum_weighted_val_losses['Val.'][-2]} , Current val loss: {sum_weighted_val_losses['Val.'][-1]}")
                             else:
                                 early_stopping_counter = 0
                                 
@@ -330,7 +354,8 @@ class Trainer():
                 'weighted_losses' : weighted_losses,
                 'epoch_val_losses' : epoch_val_losses,
                 'epoch_val_weighted_losses' : epoch_val_weighted_losses,
-                'sum_val_losses' : sum_val_losses}
+                'sum_val_losses' : sum_val_losses,
+                'sum_weighted_val_losses' : sum_weighted_val_losses}
                 
     
     #TODO: DO THIS IN A WAY THAT MAKES IT LOOK NICE
@@ -363,7 +388,7 @@ class Trainer():
     
         #Plot validation unweighted losses
         results['epoch_val_losses']['Train'] = results['epoch_losses']['loss']
-        self.p.plot_loss_overlay(results['epoch_val_losses'], xlab='Epoch', ylab='Loss',
+        self.p.plot_loss_overlay(results['epoch_val_losses'], xlab='Epoch', ylab='loss',
                               save_name=os.path.join(self.output_dir,'Epoch_losses_Val.png'),
                                val_frequency=self.config['val_frequency'])
         
@@ -371,7 +396,7 @@ class Trainer():
         val_loglosses = {}
         for key, val in results['epoch_val_losses'].items():
             val_loglosses[key] = np.log(np.array(val))
-        self.p.plot_loss_overlay(val_loglosses, xlab='Epoch', ylab='Logloss',
+        self.p.plot_loss_overlay(val_loglosses, xlab='Epoch', ylab="logloss",
                               save_name=os.path.join(self.output_dir,'Epoch_LogLosses_Val.png'),
                                val_frequency=self.config['val_frequency'])
             
@@ -387,7 +412,7 @@ class Trainer():
         #Plot weighted loss per sample
         results['epoch_val_weighted_losses']['Train'] = results['weighted_losses']['loss']
         self.p.plot_loss_overlay(results['epoch_val_weighted_losses'], 
-                                 xlab='Epoch', ylab='Weighted Loss',
+                                 xlab='Epoch', ylab='Weighted loss',
                             save_name=os.path.join(self.output_dir,'Weighted_epoch_losses_Val.png'),
                                val_frequency=self.config['val_frequency'])
         
@@ -396,8 +421,16 @@ class Trainer():
         for key, val in results['epoch_val_weighted_losses'].items():
             weighted_val_loglosses[key] = np.log(val)
         self.p.plot_loss_overlay(weighted_val_loglosses, 
-                                 xlab='Epoch', ylab='Weighted Logloss',
+                                 xlab='Epoch', ylab='Weighted logloss',
                         save_name=os.path.join(self.output_dir,'Weighted_epoch_LogLosses_Val.png'),
+                               val_frequency=self.config['val_frequency'])
+        
+        train_vs_val = {}
+        train_vs_val['Train'] = results['weighted_losses']['loss']
+        train_vs_val['Val.'] = results['sum_weighted_val_losses']['Val.']
+        self.p.plot_loss_overlay(train_vs_val, 
+                                 xlab='Epoch', ylab='Loss',
+                            save_name=os.path.join(self.output_dir,'Weighted_Epoch_losses_Train_Val.png'),
                                val_frequency=self.config['val_frequency'])
         
         
@@ -408,6 +441,8 @@ class Trainer():
     def save_training(self, train_results, save_best=True):
         
         #Save the model and optimizer
+        
+
         if save_best:
             torch.save(self.best_model.state_dict(), os.path.join(self.output_dir, 'model_state_dict.pt'))
             torch.save(self.best_optimizer.state_dict(), os.path.join(self.output_dir, 'optimizer_state_dict.pt'))
@@ -471,7 +506,7 @@ if __name__ == '__main__':
     
     train_data = data_set(train)
     test_data = data_set(test)
-    train_loader = DataLoader(train_data, batch_size=dh.config['batch_size'], shuffle=True)    
+    train_loader = DataLoader(train_data, batch_size=dh.config['batch_size'], shuffle=True, drop_last=True)    
     test_loader = DataLoader(test_data, batch_size=1)
     
     if len(val) != 0:

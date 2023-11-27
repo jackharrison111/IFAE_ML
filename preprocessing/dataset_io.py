@@ -57,15 +57,18 @@ class DatasetHandler():
             
             self.calculate_mcweight()
             
-            self.add_additional_weight()
-            
+            #self.add_additional_weight()
+
             self.reduce_to_training_variables(self.config['training_variables'])
             
+
             self.clean_dataset(
                 r_negative=self.config['remove_negative_weights'],
                 r_zero=self.config['remove_zero_weights'])
             
+
             self.scale_variables(scalers=scalers)
+
         else:
             self.data = []
         
@@ -73,9 +76,11 @@ class DatasetHandler():
     def get_dataset(self, infile, chosen_samples=None):
         
         self.data = pd.read_feather(infile)
+
         if chosen_samples:
+            before = len(self.data)
             self.data = self.data.loc[self.data['sample'].isin(chosen_samples)]
-            print(f"Only using samples: {chosen_samples}")
+
         if self.signal:
             if self.config['num_test_samples'] != -1:
                 self.data = self.data[:self.config['num_test_samples']]
@@ -132,7 +137,8 @@ class DatasetHandler():
                         ]
         njet_corrections = {}
         factors = [0.965492, 0.835492, 0.769111, 0.725872, 0.694378, 0.669898]
-        
+        for i, col in enumerate(self.data.columns):
+            print(i,col)
         for ind, i in enumerate(range(1,7)):
             print(f"Updating VV Njet {i} with factor: {factors[ind]}")
 
@@ -190,9 +196,27 @@ class DatasetHandler():
             
             if col == 'weight':
                 #Adjust the weights to be centered on 1 #normalise
-                #TODO - decide what to do with 
-                self.data.loc[:,'scaled_weight'] = self.data.loc[:,col]/self.data[col].sum()
-                continue
+                
+
+                if self.config.get('clip_weight', False):
+                    
+                    self.data.loc[:,'scaled_weight'] =  (self.data.loc[:,col]/self.data[col].sum()).clip(lower=-0.5, upper=0.5)
+                    continue
+
+                if self.config.get('norm_weight_to_one', False):
+                    self.data.loc[:,'scaled_weight'] = 1+((self.data.loc[:,col] - self.data.loc[:,col].mean())/(max(self.data.loc[:,col])-min(self.data.loc[:,col])))
+                    continue
+
+                elif self.config.get('shift_weight_to_one', False):
+                    self.data.loc[:,'scaled_weight'] = 1 + ((self.data.loc[:,col] - self.data.loc[:,col].mean()))
+                    continue
+                elif self.config.get('standard_scale', False):
+                    self.data.loc[:,'scaled_weight'] = 1 + ((self.data.loc[:,col] - self.data.loc[:,col].mean())/self.data.loc[:,col].std())
+                    continue
+
+                else: 
+                    self.data.loc[:,'scaled_weight'] = self.data.loc[:,col]/self.data[col].sum()
+                    continue
 
             if col in ['sample','eventNumber', 'index']:
                 continue

@@ -26,7 +26,8 @@ if __name__ == '__main__':
                         default="configs/training_config.yaml", required=False)
     parser.add_argument("-r","--Region",action="store", help="Set the region to config use, default is to use the config", 
                         default=None, required=False, type=str)
-    parser.add_argument("-n","--NormFlows",action="store", help="Set whether to use normalising flows config, use in conjuction with region", default=False, required=False, type=bool)
+    parser.add_argument("-n","--NormFlows",action="store", help="Set whether to use normalising flows config, use in conjuction with region", 
+                        default=True, required=False, type=bool)
     parser.add_argument("-j","--JobName",action="store", help="Set the job name, for outputting to a given folder", 
                         default=None, required=False, type=str)
     parser.add_argument("-t","--NoTrain",action="store", help="Choose whether to train the model or not", 
@@ -34,10 +35,14 @@ if __name__ == '__main__':
     parser.add_argument("-e","--EvenOrOdd",action="store", help="Choose whether to train the model on Even or Odd event numbers", 
                         default=False, required=False, type=str)
     
-    parser.add_argument("-s","--nEpochs",action="store", help="Set number of epochs to run over", default=False, required=False, type=bool)
-    
+    parser.add_argument("-s","--nEpochs",action="store", help="Set number of epochs to run over", default=False, required=False, type=int)
+    parser.add_argument("-p","--produceSamples",action="store", help="Set whether to sample model or not", default=True, required=False, type=bool)
+
     args = parser.parse_args()
     conf = args.inputConfig
+
+    #JUST FOR NOW:
+    validation_set = False
     
     if args.Region:
         if args.NormFlows:
@@ -64,12 +69,15 @@ if __name__ == '__main__':
     if args.nEpochs:
         dh.config['num_epochs'] = args.nEpochs
     
-    train, val, test = dh.split_dataset(use_val=dh.config['validation_set'], 
+    train, val, test = dh.split_dataset(use_val=validation_set, #use_val=dh.config['validation_set'], 
                 use_eventnumber=dh.config.get('use_eventnumber',None))
     
-    
+    print("Length of train set: ", len(train))
     sum_train_w = train['weight'].sum()
-    sum_val_w = val['weight'].sum()
+    if val:
+        sum_val_w = val['weight'].sum()
+    else:
+        sum_val_w = 0
     sum_test_w = test['weight'].sum()
     
     out_str = [f"Total sum of weights: {sum_train_w + sum_val_w + sum_test_w}\n"]
@@ -145,9 +153,10 @@ if __name__ == '__main__':
         f.writelines(model_info)
         
 
-    #TODO: SAVE TO COMMON AREA INSTEAD
+    #Save to the common area:
     dataset_savedir = '/data/at3/common/multilepton/VLL_production/trainings'
-    dataset_jobdir = os.path.join(dataset_savedir, args.JobName)
+    dataset_jobdir = t.output_dir.replace('results', dataset_savedir)
+    print(f"Saving dataset output to: {dataset_jobdir}")
 
     #with open(os.path.join(t.output_dir,'New_saved_outputs_2.pkl'), 'wb') as f:
     #    pickle.dump(output, f)
@@ -168,14 +177,22 @@ if __name__ == '__main__':
         min_test = min(output['ad_score'])
         max_test = max(output['ad_score'])
         
-        min_val = min(val_output['ad_score'])
-        max_val = max(val_output['ad_score'])
+        if val_output:
+            min_val = min(val_output['ad_score'])
+            max_val = max(val_output['ad_score'])
+            prob_min = min(min_test,min_val)
+            prob_max = max(max_test,max_val)
+        else:
+            prob_min = min_test
+            prob_max = max_test
         
-        prob_min = min(min_test,min_val)
-        prob_max = max(max_test,max_val)
+        
         
         #Also add the percentiles of these...
-        all_scores = np.append(output['ad_score'], val_output['ad_score'])
+        if val_output:
+            all_scores = np.append(output['ad_score'], val_output['ad_score'])
+        else:
+            all_scores = output['ad_score']
         percentile1 = np.percentile(all_scores, 1)
         percentile99 = np.percentile(all_scores,99)
         
@@ -196,8 +213,9 @@ if __name__ == '__main__':
         scale_strs.append("Scaled NF scores using: \n")
         scale_strs.append(f"Test min_prob: {min_test}\n")
         scale_strs.append(f"Test max_prob: {max_test}\n")
-        scale_strs.append(f"Val min_prob: {min_val}\n")
-        scale_strs.append(f"Val max_prob: {max_val}\n")
+        if val_output:
+            scale_strs.append(f"Val min_prob: {min_val}\n")
+            scale_strs.append(f"Val max_prob: {max_val}\n")
         scale_strs.append(f"Use for scaling: {prob_min} , {prob_max}\n")
         scale_strs.append(f"Percentiles1_99: {percentile1} , {percentile99}\n")
         scale_strs.append(f"Percentiles05_995: {percentile05} , {percentile995}\n")
@@ -211,7 +229,7 @@ if __name__ == '__main__':
     sig_dh = DatasetHandler(conf, scalers=dh.scalers, out_dir=t.output_dir)
     sig_data = data_set(sig_dh.data)
     sig_loader = DataLoader(sig_data, batch_size=2048, shuffle=True)
-    sig_output = tester.evaluate(t.model, sig_loader)
+    sig_output = tester.evaluate(model, sig_loader)
 
     #TODO: SAVE TO COMMON
     with open(os.path.join(dataset_jobdir,'saved_signal_outputs.pkl'), 'wb') as f:
@@ -220,13 +238,110 @@ if __name__ == '__main__':
    
     out_plots = t.config.get('output_plots' , None)
     
-    #out_plots = False
+    out_plots = {'bkg_plot': True}
+
     if not out_plots:
         print("No output plots specified for evaluation run. Ending script...")
     else:
         tester.analyse_results(output, sig_output=sig_output, **out_plots)
     
     
+    #TODO: Add sampling and plot each variable to see the learning
+    #TODO : Add for if loading scalers
+    if args.produceSamples:
+
+        from plotting.plot_results import Plotter
+        plotter = Plotter()
+
+        sample_save_dir = os.path.join(t.output_dir, 'sampled')
+        if not os.path.exists(sample_save_dir):
+            os.makedirs(sample_save_dir)
+
+        bins = {
+            'met_met' : np.linspace(0,300, 50),
+            'Mllll0123' : np.linspace(0,1000,100),
+            'HT_lep' : np.linspace(0,1000,100),
+            'HT_jets' : np.linspace(0,600,60),
+            'nJets_Continuous' : np.linspace(0,10,11),
+            'best_mZll' : np.linspace(0,200,100),
+            'other_mZll' : np.linspace(0,400,50),
+            'M3l_high' : np.linspace(0, 1000, 50),
+            'M3l_low' : np.linspace(0, 600, 60),
+            'best_ptZll' : np.linspace(0, 600, 60),
+            'other_ptZll' :  np.linspace(0,600,60),
+            'MtLepMet' : np.linspace(0,2000,100),
+            'MT_otherllMET' : np.linspace(0,1300,75),
+            'MT_ZllMET' : np.linspace(0, 1200, 60),
+            'sumPsbtag' : np.linspace(0,30,30)
+        }
+
+        n_samples = 50000
+        sampled_outs, logs = model.sample(n_samples)
+        sampled_outs = sampled_outs.detach()
+
+        sampled_unsc, train_unsc, test_unsc = {}, {}, {}
+
+        for i, (col, scaler) in enumerate(dh.scalers.items()):
+
+            
+            
+            sampled_unsc[col] = scaler.inverse_transform(sampled_outs[:,i].reshape(1,-1)).flatten()
+            train_unsc[col] = scaler.inverse_transform(train_data.data[:,i].reshape(1,-1)).flatten()
+            test_unsc[col] = scaler.inverse_transform(test_data.data[:,i].reshape(1,-1)).flatten()
+
+           
+
+        
+        #Plot it all... with correct weights! 
+        for col in sampled_unsc.keys():
+            
+            factor = 1e-3
+            if col in ['nJets_Continuous', 'sumPsbtag']:
+                factor = 1
+            #Plot and save to right place! 
+            sample_hist = np.histogram(sampled_unsc[col]*factor, 
+                                    bins=bins[col],
+                                    density=True)
+            
+            train_hist = np.histogram(train_unsc[col]*factor, 
+                                    bins=bins[col],
+                                    weights=train_data.weight.reshape(-1),
+                                    density=True)
+        
+            test_hist = np.histogram(test_unsc[col]*factor, 
+                                    bins=bins[col],
+                                    weights=test_data.weight.reshape(-1),
+                                    density=True)
+
+
+            plotter.plot_sig_bkg(col, train_hist, sample_hist, bkg_label='Train', sig_label='Sampled',
+                        save_name=os.path.join(sample_save_dir, f"{col}_Train"),
+                        title=dh.config['Region_name'],
+                        sig_hist_type='step')
+
+            plotter.plot_sig_bkg(col, test_hist, sample_hist, bkg_label='Test', sig_label='Sampled',
+                        save_name=os.path.join(sample_save_dir, f"{col}_Test"),
+                        title=dh.config['Region_name'],
+                        sig_hist_type='step')
+            
+            
+        if not args.NoTrain:
+            #Plot distribution of weights for training?
+            weight_hist = np.histogram(train_data.weight.reshape(-1), bins=np.linspace(min(train_data.weight),max(train_data.weight),100))
+            plotter.plot_sig_bkg('weight', weight_hist, bkg_label=None,
+                                save_name=os.path.join(sample_save_dir, "og_weight_distribution"))
+            
+        
+            train_w_hist = np.histogram(train_data.scaled_weight.reshape(-1), bins=np.linspace(min(train_data.scaled_weight),max(train_data.scaled_weight),100))
+            plotter.plot_sig_bkg('weight', train_w_hist, bkg_label=None,
+                                save_name=os.path.join(sample_save_dir, "train_weight_distribution"))
+
+            print("--- train weights --- ")
+            print(train_data.weight)
+            print(train_data.scaled_weight)
+            print(train_data.weight == train_data.scaled_weight)
+
+
     end = perf_counter()
     print(f"Time taken for everything: {end-start}s.")
     

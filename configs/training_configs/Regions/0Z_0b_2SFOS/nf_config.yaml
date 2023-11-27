@@ -26,7 +26,7 @@ vll_out_dir: '/data/at3/scratch3/jharrison/mod_VLL'
 Train : True
 train_size: -1
 batch_size : 1024
-learning_rate : 0.00001
+learning_rate : 0.0001 #0.00001 before
 num_epochs : 3000
 weight_decay: 0.00001
 optimizer: 'Adam'

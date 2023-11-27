@@ -38,6 +38,8 @@ import matplotlib.pyplot as plt
 
 import pickle
 import time
+import itertools
+
 class Tester():
     
     def __init__(self, config=None):
@@ -67,7 +69,8 @@ class Tester():
         self.model = model
         
         with torch.no_grad():
-            
+            if not testloader:
+                return None
             for idx, data_dict in enumerate(testloader):   
             
                 data = data_dict['data']
@@ -445,6 +448,13 @@ class Tester():
             chi2_out = []
             sum_weights = []
             sum_weights.append(f"Background: {sum(bkg_output['weights'])}\n")
+
+            #Make overflows properly of bkg and signals:
+            sig_scores = np.clip(sig_scores, a_min=0, a_max=0.999)
+            bkg_scores = np.clip(bkg_scores, a_min=0, a_max=0.999)
+
+            all_chi2 = {}
+
             #Need to save the min prob and max prob for future scaling
             for sig_sample in set(sig_output['groups']):
                 print(f"Running: {sig_sample}")
@@ -480,11 +490,30 @@ class Tester():
                 print(out_str)
                 weight_str = f"{sig_sample}: {sum(sig_output['weights'][inds])}\n"
                 sum_weights.append(weight_str)
+                all_chi2[sig_sample] = sep
                 chi2_out.append(out_str)
             
             with open(os.path.join(self.out_dir, 'Chi2_Distances.txt'),'w') as f:
                 f.writelines(sorted(chi2_out))
+
+            #Loop over the all_chi2 and group into averages, and an overall average
             
+            out_groups = {}
+            out_group_counts = {}
+            for sample_name, chi2val in all_chi2.items():
+
+                #Check for the string up to the first digit in the name
+                sample_start = ["".join(x) for _, x in itertools.groupby(sample_name, key=str.isdigit)][0] 
+                out_groups[sample_start] = out_groups.get(sample_start, 0) + chi2val
+                out_group_counts[sample_start] = out_group_counts.get(sample_start,0)+1
+
+            for sample_name in out_groups.keys():
+                out_groups[sample_name] = out_groups[sample_name] / out_group_counts[sample_name]
+
+            #Save to a file
+            av_ch2_out = [f"{key} : {val}\n" for key, val in out_groups.items()]
+            with open(os.path.join(self.out_dir, 'AverageChi2_Distances.txt'),'w') as f:
+                f.writelines(sorted(av_ch2_out))
             
         #Do the same but plot background by group?
         if kwargs.get('bkg_plot'):
