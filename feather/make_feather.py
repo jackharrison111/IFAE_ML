@@ -5,6 +5,7 @@ import json
 import pandas as pd
 import numpy as np
 from time import perf_counter
+from utils._utils import load_yaml_config
 
 '''
 Remember to export the python path variable:
@@ -23,15 +24,21 @@ class FeatherMaker():
     
     def __init__(self, master_config='feather/feather_config.yaml'):
         
-        with open(master_config, 'r') as file:
-            self.master_config = yaml.safe_load(file)
+        self.master_config = load_yaml_config(master_config)
+        self.region = self.master_config['region']
+    
+            
+    def get_features(self, use_default=False):
 
-    def get_features(self):
-
-        infile = self.master_config['variables_file']
+        infile = os.path.join('configs/variable_choices', self.region, self.master_config['variables_file'])
+        
+        if self.master_config.get('use_default',False):
+            infile = os.path.join('configs/variable_choices', self.master_config['variables_file'])
+            
         with open(infile, 'r') as file:
             vars = file.readlines()
             vars = [v.rstrip() for v in vars if v[0] != '#']
+        vars = list(set(vars))
         return vars
 
 
@@ -51,9 +58,14 @@ class FeatherMaker():
         return master_list
     
     
-    def extract_DSIDs(self, sample_file, output_json):
+    def extract_DSIDs(self, sample_file, output_json, use_default=False):
     
-        with open(sample_file, 'r') as file:
+        s_file = os.path.join('configs/sample_choices', self.region, sample_file)
+        
+        if self.master_config.get('use_default',False):
+            s_file = os.path.join('configs/sample_choices', sample_file)
+        
+        with open(s_file, 'r') as file:
             sample_txt = file.readlines()
 
         samples_dict = {}
@@ -62,7 +74,8 @@ class FeatherMaker():
             sample_list = line.split(':')[-1]
             sample_name = line.split(':')[0]
             if sample_name[0]=='#':
-                sample_name = sample_name[1:]
+                #sample_name = sample_name[1:]
+                continue
             samples = sample_list.split(',')
             DSIDs = [path.split('/')[-1][:6] for path in samples]
             for id in DSIDs:
@@ -71,14 +84,19 @@ class FeatherMaker():
                 all_samples.append(id)
             all_samples = list(set(all_samples))
             samples_dict[sample_name] = all_samples
-
-        with open(output_json,'w') as f:
+        if not os.path.exists(os.path.join('configs/sample_jsons', self.region)):
+            os.makedirs(os.path.join('configs/sample_jsons', self.region))
+        o_json = os.path.join('configs/sample_jsons', self.region, output_json)
+        with open(o_json,'w') as f:
             json.dump(samples_dict, f)
+        self.output_json = o_json
+            
             
     def make_sample_file_map(self, all_files):
         
         #Read the mapping of sample : DSIDs
-        with open(self.master_config['json_output'], 'r') as f:
+       
+        with open(self.output_json, 'r') as f:
             sample_map = json.load(f)
 
         #Transform from sample : DSIDs to sample : file_path
@@ -125,6 +143,7 @@ class FeatherMaker():
                         else:
                             data = pd.DataFrame(data, columns=variables) 
                             array = pd.concat([array,data])
+                            array.reset_index(inplace=True,drop=True)
                     print(f"Got {len(array)} data events.")
             else:
                 array = uproot.concatenate(nominals, variables, cut=cut_expr, library='np', allow_missing=True)
@@ -142,7 +161,6 @@ class FeatherMaker():
             #Make additional variables
             start = perf_counter()
             for i, func in enumerate(variable_funcs):
-                #print(f"Trying function: {func}")
                 array = func(array)
                 lap = perf_counter()
                 print(f"Finished function {i}. Time taken: {round(lap-start,2)}s")
@@ -150,9 +168,11 @@ class FeatherMaker():
             output_data = pd.concat([output_data, array])
             
             
+        output_data.reset_index(inplace=True, drop=True)
         output_data.reset_index(inplace=True)
+        
         save_name = os.path.join(self.master_config['feather_path'],
-                            f"{self.master_config['region_name']}.ftr")
+                            f"{self.master_config['region_save_name']}.ftr")
         output_data.to_feather(save_name)
         print(f"Saved feather file to: {save_name}")
                 
@@ -190,11 +210,11 @@ if __name__ == '__main__':
     #Get user-defined functions to run over dataframe (output is saved to feather)
     from preprocessing.create_variables import VariableMaker
     vm = VariableMaker()
+    
     #TODO: Make this into a config input
     func_strings = fm.master_config[fm.master_config['variable_functions_choice']]
     funcs = [getattr(vm, s) for s in func_strings]
-    #funcs = [vm.find_bestZll_pair, vm.calc_4lep_mZll, vm.calc_4lep_pTll, vm.calc_m3l]
-    #funcs = [vm.find_Z_pairs, vm.calc_4lep_pTll, vm.calc_m3l]
+    
     
     #Make the feather file
     fm.make_output_feather(sample_file_paths, variables, funcs)

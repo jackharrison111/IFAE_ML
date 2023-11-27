@@ -9,18 +9,23 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+import math
 
 #Class to store the encoder 
 class Encoder(nn.Module):
     
-    def __init__(self, dimensions, latent_dim, variational=False):
+    def __init__(self, dimensions, latent_dim, variational=False, func='Tanh'):
         
         super().__init__()
+        
+        func='LeakyReLU'
+        func='ELU'
+        func='Tanhshrink'
+        func='Sigmoid'
+        
         layers = []
         self.variational = variational
-        #func = 'LeakyReLU' 
-        func = 'Tanh'
+        
         for i, dim in enumerate(dimensions):
             
             if dim == dimensions[-1]:
@@ -29,7 +34,7 @@ class Encoder(nn.Module):
                 layers.append(
                     nn.Sequential(
                         nn.Linear(dim, latent_dim),
-                        getattr(nn, func)()
+                        #getattr(nn, func)()
                         #nn.ReLU()
                     )
                 )
@@ -65,13 +70,14 @@ class Encoder(nn.Module):
 #Class to store the decoder
 class Decoder(nn.Module):
     
-    def __init__(self, dimensions, latent_dim):
+    def __init__(self, dimensions, latent_dim, func='Tanh'):
         super().__init__()
         
+        func = 'LeakyReLU'
+        func='ELU'
+        func='Tanhshrink'
+        func='Sigmoid'
         layers = []
-        
-        #func = 'LeakyReLU'
-        func = 'Tanh'
         layers.append(
             nn.Sequential(
                     nn.Linear(latent_dim, dimensions[0]),
@@ -100,10 +106,9 @@ class Decoder(nn.Module):
         
     def forward(self, data):
         #Add chosen output function
-        func_choice = 'Tanh'
-        func = getattr(nn, func_choice)()
+        #func_choice = 'Tanh'
+        #func = getattr(nn, func_choice)()
         prediction = self.decoder(data)
-        #return func(prediction)
         return prediction
         
         
@@ -116,16 +121,20 @@ class AE(nn.Module):
         self.encoder = Encoder(enc_dim, latent_dim)
         self.decoder = Decoder(dec_dim, latent_dim)
         
-    def loss_function(self, recon_x, x, mu, log_var, **kwargs):
-        #BCE = F.binary_cross_entropy(recon_x, x, reduction='sum')
-        MSE = F.mse_loss(x, recon_x, reduction='none')   #Works it out element-wise
-        MSE = torch.sum(MSE, dim=1)   #Average across features, leaving per-example MSE
-        return MSE, None, None
+    def loss_function(self, **kwargs):
+        
+        MSE = F.mse_loss(kwargs['data'], kwargs['reco'], reduction='none')
+        MSE = torch.mean(MSE, dim=1)
+        return {'loss' : MSE}
         
     def forward(self, data):
-        z,_ = self.encoder(data)
+        z, _ = self.encoder(data)
         prediction = self.decoder(z)
-        return prediction, z, _
+        return {'data' : data, 'reco': prediction, 'mu' : z}
+    
+    def get_anomaly_score(self, losses):
+        
+        return torch.log(losses['loss'])
         
 
         
@@ -144,7 +153,7 @@ class VAE(nn.Module):
         
         #BCE = F.binary_cross_entropy(recon_x, x, reduction='sum')
         MSE = F.mse_loss(x, recon_x, reduction='none')   #Works it out element-wise
-        MSE = torch.sum(MSE, dim=1)   #Average across features, leaving per-example MSE
+        MSE = torch.mean(MSE, dim=1)   #Average across features, leaving per-example MSE
         KLD = 1 + log_var - mu.pow(2) - log_var.exp()   #Again worked out element-wise
         KLD = -0.5 * torch.sum(KLD, dim=1)   #Sum across features, leaving per-example KLD
         

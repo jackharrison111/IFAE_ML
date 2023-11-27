@@ -1,0 +1,66 @@
+
+
+
+
+rest_string = "(nTaus_OR==0)&(lep_Pt_0*1e-3>10)&(lep_Pt_1*1e-3>10)&(lep_Pt_2*1e-3>10)&(lep_P && (lep_isolationFCLoose_0)&(lep_isolationFCLoose_1)&(lep_isolationFCLoose_2)&(lep_isolationFCLoose_3)& (lep_isolationFCLoose_4)&(nJets_OR_DL1r_77==0)"
+
+
+
+
+
+
+5lep 2Z0b muLEQe
+
+XXX_2Z_muLEQe && nTaus_OR==0 && XXX_5lep_PT && XXX_5lep_ISO && nJets_OR_DL1r_77 == 0
+
+
+
+
+
+
+5lep 0Z1b
+
+"(XXX_0Z_muLEQe||XXX_0Z_muGe) && nTaus_OR==0 && XXX_5lep_PT && XXX_5lep_ISO && nJets_OR_DL1r_77 == 1"
+
+5lep 1Z1b
+
+"(XXX_1Z_muLEQe||XXX_1Z_muGe) && nTaus_OR==0 && XXX_5lep_PT && XXX_5lep_ISO && nJets_OR_DL1r_77 == 1"
+
+5lep 2Z1b
+
+"(XXX_2Z_muLEQe||XXX_2Z_muGe) && nTaus_OR==0 && XXX_5lep_PT && XXX_5lep_ISO && nJets_OR_DL1r_77 == 1"
+
+__________
+
+XXX_0Z_muGe: (fivelep_type==1||fivelep_type==2||fivelep_type==3||sixlep_type==1||sixlep_type==2||sixlep_type==3||(abs(lep_ID_1)*multilepornone_type>0))&&num_Zee_best+num_Zmm_best==0
+
+
+fixed: (((fivelep_type==1)|(fivelep_type==2)|(fivelep_type==3)|(sixlep_type==1)|(sixlep_type==2)|(sixlep_type==3)|(abs(lep_ID_1)*multilepornone_type>0))&(num_Zee_best+num_Zmm_best==0))
+
+XXX_0Z_muLEQe: (fivelep_type==4||fivelep_type==5||fivelep_type==6||sixlep_type==4||sixlep_type==5||sixlep_type==6||sixlep_type==7||(abs(lep_ID_1)*multilepornone_type>0))&&num_Zee_best+num_Zmm_best==0
+
+XXX_1Z_muGe: (
+((fivelep_type==1||fivelep_type==2||sixlep_type==1||sixlep_type==2)&&num_Zee_best==0&&num_Zmm_best==1)||((fivelep_type==3||fivelep_type==4||sixlep_type==3||sixlep_type==4)&&num_Zee_best==1&&num_Zmm_best==0)||(abs(lep_ID_1)*multilepornone_type>0&&num_Zee_best+num_Zmm_best==1))
+
+fixed:
+
+((((fivelep_type==1)|(fivelep_type==2)|(sixlep_type==1)|(sixlep_type==2))&(num_Zee_best==0)&(num_Zmm_best==1))|(((fivelep_type==3)|(fivelep_type==4)|(sixlep_type==3)|(sixlep_type==4))&(num_Zee_best==1)&(num_Zmm_best==0))|((abs(lep_ID_1)*multilepornone_type>0)&(num_Zee_best+num_Zmm_best==1)))
+
+
+XXX_1Z_muLEQe: (((fivelep_type==3||fivelep_type==4||sixlep_type==3||sixlep_type==4||sixlep_type==5)&&num_Zee_best==0&&num_Zmm_best==1)||((fivelep_type==5||fivelep_type==6||sixlep_type==5||sixlep_type==6||sixlep_type==7)&&num_Zee_best==1&&num_Zmm_best==0)||(abs(lep_ID_1)*multilepornone_type>0&&num_Zee_best+num_Zmm_best==1))
+
+
+fixed: ((((fivelep_type==3)|(fivelep_type==4)|(sixlep_type==3)|(sixlep_type==4)|(sixlep_type==5))&(num_Zee_best==0)&(num_Zmm_best==1))|(((fivelep_type==5)|(fivelep_type==6)|(sixlep_type==5)|(sixlep_type==6)|(sixlep_type==7))&(num_Zee_best==1)&(num_Zmm_best==0))|((abs(lep_ID_1)*multilepornone_type>0)&(num_Zee_best+num_Zmm_best==1)))
+
+
+
+XXX_2Z_muGe: (((fivelep_type==1||sixlep_type==1)&&num_Zee_best==0&&num_Zmm_best==2)||((fivelep_type==3||sixlep_type==3)&&num_Zee_best==1&&num_Zmm_best==1)||((fivelep_type==5||sixlep_type==5)&&num_Zee_best==2&&num_Zmm_best==0)||(abs(lep_ID_1)*multilepornone_type>0&&num_Zee_best+num_Zmm_best==2))
+
+
+fixed: ((((fivelep_type==1)|(sixlep_type==1))&(num_Zee_best==0)&(num_Zmm_best==2))|(((fivelep_type==3)|(sixlep_type==3))&(num_Zee_best==1)&(num_Zmm_best==1))|(((fivelep_type==5)|(sixlep_type==5))&(num_Zee_best==2)&(num_Zmm_best==0))|((abs(lep_ID_1)*multilepornone_type>0)&(num_Zee_best+num_Zmm_best==2)))
+
+
+XXX_2Z_muLEQe: (((fivelep_type==2||sixlep_type==2||sixlep_type==3)&&num_Zee_best==0&&num_Zmm_best==2)||((fivelep_type==4||sixlep_type==4||sixlep_type==5)&&num_Zee_best==1&&num_Zmm_best==1)||((fivelep_type==6||sixlep_type==6||sixlep_type==7)&&num_Zee_best==2&&num_Zmm_best==0)||(abs(lep_ID_1)*multilepornone_type>0&&num_Zee_best+num_Zmm_best==2))
+
+fixed: ((((fivelep_type==2)|(sixlep_type==2)|(sixlep_type==3))&(num_Zee_best==0)&(num_Zmm_best==2))|(((fivelep_type==4)|(sixlep_type==4)|(sixlep_type==5))&(num_Zee_best==1)&(num_Zmm_best==1))|(((fivelep_type==6)|(sixlep_type==6)|(sixlep_type==7))&(num_Zee_best==2)&(num_Zmm_best==0))|((abs(lep_ID_1)*multilepornone_type>0)&(num_Zee_best+num_Zmm_best==2)))
+
