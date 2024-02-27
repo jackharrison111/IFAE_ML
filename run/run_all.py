@@ -21,6 +21,9 @@ if __name__ == '__main__':
     
     start = perf_counter()
     
+    #JUST FOR NOW:
+    validation_set = False
+    
     parser = argparse.ArgumentParser("Running standalone analysis package")
     parser.add_argument("-i","--inputConfig",action="store", help="Set the input config to use, default is 'configs/training_config.yaml'", 
                         default="configs/training_config.yaml", required=False)
@@ -41,8 +44,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     conf = args.inputConfig
 
-    #JUST FOR NOW:
-    validation_set = False
+    
     
     if args.Region:
         if args.NormFlows:
@@ -110,7 +112,9 @@ if __name__ == '__main__':
     else:
         
         #Try loading model from somewhere...
-        with open('evaluate/region_settings/nf_NewYields.yaml', 'r') as f:
+        train_result_file = 'evaluate/region_settings/nf_NewYields.yaml'
+        train_result_file = 'evaluate/region_settings/nf_Q2.yaml'
+        with open(train_result_file, 'r') as f:
             run_dirs = yaml.safe_load(f)
             
         if t.config['even_or_odd'] =='Even':

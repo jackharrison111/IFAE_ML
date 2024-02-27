@@ -5,14 +5,14 @@ out_folder: 'Q2_1b_NFs'
 
 
 #Samples
-samples_path: '/data/at3/common/multilepton/VLL_production/feather/4lepQ2'
+samples_path: '/data/at3/scratch2/multilepton/VLL_production/feather/4lepQ2'
 feather_file : 'Q2_1b.ftr'
 signal_file: 'Q2_1b_Sigs.ftr'
 
 
 #Evaluating to ntuple
-ntuple_path: '/data/at3/common/multilepton/VLL_production/nominal'
-ntuple_outpath: '/data/at3/common/multilepton/VLL_production/evaluations'
+ntuple_path: '/data/at3/scratch3/multilepton/VLL_production/nominal'
+ntuple_outpath: '/data/at3/scratch3/multilepton/VLL_production/evaluations'
 
 
 #Outputting to ntuple
@@ -78,13 +78,11 @@ training_variables:     ['met_met',
     'MtLepMet',
     'MT_otherllMET',
     'MT_ZllMET',
-    'sumPsbtag',
     'weight',
     'sample',
     'eventNumber',
     'index'
 ]
-
  
 #Set the samples used
 chosen_samples : [

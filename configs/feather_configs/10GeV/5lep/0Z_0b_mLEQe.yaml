@@ -1,6 +1,6 @@
 #Set the input config files
 region: '0Z_0b_mLEQe'
-region_save_name : '0Z_0b_mLEQe_10GeV_NewVars'
+region_save_name : '0Z_0b_mLEQe_10GeV'
 
 #Bkg configs:
 use_default: True

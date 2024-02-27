@@ -1,0 +1,96 @@
+
+even_base_dir: 'results/NF_CorrectYields_Even'
+odd_base_dir: 'results/NF_CorrectYields_Odd'
+
+split_amount : 100
+total_files : 2000
+
+base_path: '/data/at3/common/multilepton/VLL_production/trainings'
+even_eval_base: A_DatasetRedo
+odd_eval_base: A_DatasetRedo_Odd
+
+regions:
+    0Z_0b_0SFOS:
+        even_path : '0Z_0b_0SFOS_NFs/Run_1409-27-06-2023'
+        odd_path  : '0Z_0b_0SFOS_NFs/Run_1455-27-06-2023'
+        even_eval: '0Z_0b_0SFOS_NFs/Run_2251-15-11-2023'
+        odd_eval: '0Z_0b_0SFOS_NFs/Run_2219-15-11-2023'
+
+
+    0Z_0b_1SFOS:
+        even_path : '0Z_0b_1SFOS_NFs/Run_1411-27-06-2023'
+        odd_path  : '0Z_0b_1SFOS_NFs/Run_1459-27-06-2023'
+        even_eval : '0Z_0b_1SFOS_NFs/Run_2255-15-11-2023'
+        odd_eval: '0Z_0b_1SFOS_NFs/Run_2224-15-11-2023'
+
+    0Z_0b_2SFOS:
+        even_path : '0Z_0b_2SFOS_NFs/Run_1412-27-06-2023'
+        odd_path  : '0Z_0b_2SFOS_NFs/Run_1515-27-06-2023'
+        even_eval : '0Z_0b_2SFOS_NFs/Run_2300-15-11-2023'
+        odd_eval: '0Z_0b_2SFOS_NFs/Run_2229-15-11-2023'
+
+    1Z_0b_1SFOS:
+        even_path : '1Z_0b_1SFOS_NFs/Run_1416-27-06-2023'
+        odd_path  : '1Z_0b_1SFOS_NFs/Run_1518-27-06-2023'
+        even_eval : '1Z_0b_1SFOS_NFs/Run_2310-15-11-2023'
+        odd_eval: '1Z_0b_1SFOS_NFs/Run_2239-15-11-2023'
+
+    1Z_0b_2SFOS:
+        even_path : '1Z_0b_2SFOS_NFs/Run_1425-27-06-2023'
+        odd_path  : '1Z_0b_2SFOS_NFs/Run_1518-27-06-2023'
+        even_eval : '1Z_0b_2SFOS_NFs/Run_2346-15-11-2023'
+        odd_eval: '1Z_0b_2SFOS_NFs/Run_0012-16-11-2023'
+
+    2Z_0b:
+        even_path : '2Z_0b_NFs/Run_1425-27-06-2023'
+        odd_path  : '2Z_0b_NFs/Run_1525-27-06-2023'
+        even_eval : '2Z_0b_NFs/Run_2315-15-11-2023'
+        odd_eval: '2Z_0b_NFs/Run_2244-15-11-2023'
+
+    #Bjets:
+
+    0Z_1b_0SFOS:
+        even_path : '0Z_1b_0SFOS_NFs/Run_1432-27-06-2023'
+        odd_path  : '0Z_1b_0SFOS_NFs/Run_1525-27-06-2023'
+
+        even_eval: '0Z_1b_0SFOS_NFs/Run_1214-16-11-2023'
+        odd_eval: '0Z_1b_0SFOS_NFs/Run_1241-16-11-2023'
+
+    0Z_1b_1SFOS:
+        even_path : '0Z_1b_1SFOS_NFs/Run_1433-27-06-2023'
+        odd_path  : '0Z_1b_1SFOS_NFs/Run_1539-27-06-2023'
+
+        even_eval: '0Z_1b_1SFOS_NFs/Run_1217-16-11-2023'
+        odd_eval: '0Z_1b_1SFOS_NFs/Run_1244-16-11-2023'
+
+    0Z_1b_2SFOS:
+        even_path : '0Z_1b_2SFOS_NFs/Run_1236-03-07-2023'
+        odd_path  : '0Z_1b_2SFOS_NFs/Run_1545-27-06-2023'
+        #'0Z_1b_2SFOS_NFs/Run_1211-03-07-2023' other training
+
+        even_eval: '0Z_1b_2SFOS_NFs/Run_1221-16-11-2023'
+        odd_eval: '0Z_1b_2SFOS_NFs/Run_1249-16-11-2023'
+        
+
+    1Z_1b_1SFOS:
+        even_path : '1Z_1b_1SFOS_NFs/Run_1436-27-06-2023'
+        odd_path  : '1Z_1b_1SFOS_NFs/Run_1556-27-06-2023'
+
+        even_eval: '1Z_1b_1SFOS_NFs/Run_1226-16-11-2023'
+        odd_eval: '1Z_1b_1SFOS_NFs/Run_1253-16-11-2023'
+
+    1Z_1b_2SFOS:
+        even_path : '1Z_1b_2SFOS_NFs/Run_1451-27-06-2023'
+        odd_path  : '1Z_1b_2SFOS_NFs/Run_1605-27-06-2023'
+
+        even_eval: '1Z_1b_2SFOS_NFs/Run_1230-16-11-2023'
+        odd_eval: '1Z_1b_2SFOS_NFs/Run_1258-16-11-2023'
+
+    2Z_1b:
+        even_path : '2Z_1b_NFs/Run_1455-27-06-2023'
+        odd_path  : '2Z_1b_NFs/Run_1605-27-06-2023'
+
+        even_eval: '2Z_1b_NFs/Run_1235-16-11-2023'
+        odd_eval: '2Z_1b_NFs/Run_1302-16-11-2023'
+    
+    

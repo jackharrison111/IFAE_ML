@@ -517,13 +517,15 @@ class VariableMaker():
             other_pair = -999
             other_mass = -999
             
+            '''
+            #Comment out if running over data-driven estimates?
             if abs(df.loc[i, "total_charge"]) != 2:
                 df.loc[i, 'best_Zllpair'] = best_pair
                 df.loc[i, 'best_mZll'] = best_mass
                 df.loc[i, 'other_Zllpair'] = other_pair
                 df.loc[i, 'other_mZll'] = other_mass
                 continue
-            
+            '''
             for col, pair in self.pairings.items():
                 
                 #Set the best pair and best mass if the lepton is the same flavour 

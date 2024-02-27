@@ -1,0 +1,51 @@
+
+even_base_dir: 'results/Q2_AllTrainings_First'
+odd_base_dir: 'results/Q2_AllTrainings_First_Odd'
+
+split_amount : 100
+total_files : 2000
+
+base_path: '/data/at3/common/multilepton/VLL_production/trainings'
+even_eval_base: Q2_DatasetRedo
+odd_eval_base: Q2_DatasetRedo_Odd
+
+regions:
+    Q2_0b:
+        even_path : 'Q2_0b_NFs/Run_0653-24-08-2023'
+        odd_path  : 'Q2_0b_NFs/Run_0712-24-08-2023'
+        
+        even_eval: 'Q2_0b_NFs/Run_0115-30-11-2023'
+        odd_eval: 'Q2_0b_NFs/Run_0111-30-11-2023'
+        
+    Q2_1b:
+        even_path : 'Q2_1b_NFs/Run_0711-24-08-2023'
+        odd_path  : 'Q2_1b_NFs/Run_0751-24-08-2023'
+        
+        even_eval: 'Q2_1b_NFs/Run_0128-30-11-2023'
+        odd_eval: 'Q2_1b_NFs/Run_0123-30-11-2023'
+
+    Q2_0b_e:
+        even_path : 'Q2_0b_e_NFs/Run_2103-14-08-2023'
+        odd_path  : 'Q2_0b_e_NFs/Run_1943-15-08-2023'
+
+    Q2_0b_eu:
+        even_path : 'Q2_0b_eu_NFs/Run_2103-14-08-2023'
+        odd_path  : 'Q2_0b_eu_NFs/Run_1943-15-08-2023'
+
+    Q2_0b_u:
+        even_path : 'Q2_0b_u_NFs/Run_2105-14-08-2023'
+        odd_path  : 'Q2_0b_u_NFs/Run_1946-15-08-2023'
+
+    Q2_1b_e:
+        even_path : 'Q2_1b_e_NFs/Run_2105-14-08-2023'
+        odd_path  : 'Q2_1b_e_NFs/Run_1955-15-08-2023'
+
+    Q2_1b_eu:
+        even_path : 'Q2_1b_eu_NFs/Run_2105-14-08-2023'
+        odd_path  : 'Q2_1b_eu_NFs/Run_1959-15-08-2023'
+
+    Q2_1b_u:
+        even_path : 'Q2_1b_u_NFs/Run_2105-14-08-2023'
+        odd_path  : 'Q2_1b_u_NFs/Run_2000-15-08-2023'
+
+    

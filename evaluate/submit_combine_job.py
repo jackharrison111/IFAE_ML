@@ -8,26 +8,30 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-s", "--submit",default=False, help="Choose whether to submit the jobs or not", type=bool)
+    parser.add_argument("-m", "--mergeTree",default=False, help="Choose whether to merge all to one tree or not.", type=bool)
     parser.add_argument("-p", "--parallel",default=True, help="Choose whether to submit the jobs in parallel", type=bool)
     args = parser.parse_args()
 
     parallel = args.parallel
     
-    total_files = 2000
-    split_amount = 50
+    total_files = 1900
+    split_amount = 25
+    memory = 8
+    
+    USE_SINGLE_TREE = args.mergeTree
     
     os.chdir("/nfs/pic.es/user/j/jharriso/IFAE_ML")
 
     
-    job_name = "RerunEval_v2"
+    job_name = "EvalToOneTree_Systs"
     
     
-    #base_dir = '/data/at3/scratch3/multilepton/VLL_production/evaluations'
-    #base_files = '/data/at3/scratch3/multilepton/VLL_production/evaluations/CombineGridAttempt'
-    
-    base_dir = '/data/at3/common/multilepton/VLL_production/evaluations'
-    base_files = '/data/at3/common/multilepton/VLL_production/evaluations/Eval'
+    #base_dir = '/data/at3/common/multilepton/VLL_production/evaluations'
+    #base_files = '/data/at3/common/multilepton/VLL_production/evaluations/Eval_Nominal'  #also outdir
 
+    base_dir = '/data/at3/common/multilepton/SystProduction/evaluations'
+    base_files = '/data/at3/common/multilepton/SystProduction/evaluations/Eval_Nominal'
+    
     flavour = "long"
     
     scriptdir = f"evaluate/jobs/{job_name}"
@@ -58,8 +62,10 @@ if __name__ == '__main__':
             execute.write('eval "$(conda shell.bash hook)"\n')
             execute.write('mamba activate ML_env\n')
             
-            
-            func = f"python evaluate/combine_score_branches.py -d {base_dir} -b {base_files} --First {s} --Last {i}"  
+            if USE_SINGLE_TREE:
+                func = f"python evaluate/combine_single_nominal.py -d {base_dir} -o {base_files} --First {s} --Last {i}"
+            else:
+                func = f"python evaluate/combine_score_branches.py -d {base_dir} -b {base_files} --First {s} --Last {i}"  
             
             execute.write(func)
             execute.write(' \n')
@@ -115,7 +121,7 @@ if __name__ == '__main__':
     condor.write('+flavour="long"\n')
     condor.write('request_cpus = 1\n')
 
-    condor.write('request_memory = 8 GB\n')
+    condor.write(f"request_memory = {memory} GB\n")
     condor.write('on_exit_remove          = (ExitBySignal == False) && (ExitCode == 0)\n')
     condor.write('requirements = !regexp("AMD EPYC 7452",CPU_MODEL)\n')
     condor.write('max_retries = 1\n')

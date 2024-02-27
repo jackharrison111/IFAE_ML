@@ -22,10 +22,12 @@ export PYTHONPATH=/nfs/pic.es/user/j/jharriso/IFAE_ML
 
 class FeatherMaker():
     
-    def __init__(self, master_config='feather/feather_config.yaml'):
+    def __init__(self, master_config='feather/feather_config.yaml', output_dir=None):
         
         self.master_config = load_yaml_config(master_config)
         self.region = self.master_config['region']
+        if output_dir:
+            self.master_config['feather_path'] = output_dir
     
             
     def get_features(self, use_default=False):
@@ -144,6 +146,7 @@ class FeatherMaker():
                             data = pd.DataFrame(data, columns=variables) 
                             array = pd.concat([array,data])
                             array.reset_index(inplace=True,drop=True)
+                            
                     print(f"Got {len(array)} data events.")
             else:
                 array = uproot.concatenate(nominals, variables, cut=cut_expr, library='np', allow_missing=True)
@@ -186,12 +189,14 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--config",default="feather/feather_config.yaml", help="Choose the master config to use")
+    parser.add_argument("-o", "--outputDir", default=None, help="Choose the output folder to save to")
     args = parser.parse_args()
     
     
     print(f"Starting up!\nMaking feather file using config: {args.config}")
     
-    fm = FeatherMaker(master_config=args.config)
+    fm = FeatherMaker(master_config=args.config, output_dir=args.outputDir)
+    
     print(f"Making feather from: {fm.master_config['nominal_path']}\nSaving feather to: {fm.master_config['feather_path']}")
     
     #Get the required variables from tree
@@ -215,7 +220,7 @@ if __name__ == '__main__':
     func_strings = fm.master_config[fm.master_config['variable_functions_choice']]
     funcs = [getattr(vm, s) for s in func_strings]
     
-    
+    funcs = []
     #Make the feather file
     fm.make_output_feather(sample_file_paths, variables, funcs)
     f = perf_counter()

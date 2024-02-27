@@ -12,10 +12,11 @@ if __name__ == '__main__':
     
     os.chdir("/nfs/pic.es/user/j/jharriso/IFAE_ML")
 
-    job_name = "4lepQ2_NoFlavourSplit_Sigs"
-    SIGNALS = True
-    FIVELEP = False
-    Q2 = True
+    job_name = "5lep_Adding_mcChannel"
+    outputDir = '/data/at3/common/multilepton/VLL_production/multifake_feathers/feather/5lep'
+    SIGNALS = False
+    FIVELEP = True
+    Q2 = False
     
     regions = []
     
@@ -33,7 +34,8 @@ if __name__ == '__main__':
         #regions += ["0b_e", "0b_eu", "0b_u", "1b_e", "1b_eu", "1b_u"]
         regions += ["0b", "1b"]
 
-    #regions = ["0Z_0b_mGte", "0Z_0b_mLEQe", "1Z_0b_mGte", "1Z_0b_mLEQe", "2Z_0b_mGte", "2Z_0b_mLEQe"]
+    if FIVELEP:
+        regions = ["0Z_0b_mGte", "0Z_0b_mLEQe", "1Z_0b_mGte", "1Z_0b_mLEQe", "2Z_0b_mGte", "2Z_0b_mLEQe"]
     
     #regions += ['1Z_0b_2SFOS']
     
@@ -63,14 +65,14 @@ if __name__ == '__main__':
         sh_name = os.path.join(scriptdir,f"{region}.sh")
         execute = open(sh_name, "w")
         execute.write('#!/bin/bash \n')
-        execute.write('export PATH="/data/at3/scratch3/jharrison/miniconda3/envs/ML_env/bin/:$PATH" \n')
-        #execute.write('#!/data/at3/scratch3/jharrison/miniconda3/envs/ML_env/bin/python')
+        #execute.write('export PATH="/data/at3/scratch3/jharrison/miniconda3/envs/ML_env/bin/:$PATH" \n')
+        execute.write('export PATH="/data/at3/common/multilepton/miniforge3/envs/ML_env/bin/:$PATH" \n')
         execute.write('cd /nfs/pic.es/user/j/jharriso/IFAE_ML\n')               
         execute.write('eval "$(conda shell.bash hook)"\n')
         execute.write('mamba activate ML_env\n')
               
             
-        func = f'python feather/make_feather.py -c "%s"'%new_conf_file
+        func = f"python feather/make_feather.py -c {new_conf_file} -o {outputDir}"
         execute.write(func)
                        
         execute.write(' \n')

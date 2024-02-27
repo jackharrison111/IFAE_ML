@@ -8,7 +8,7 @@ variables_file : 'Bkg_variables.txt'
 #variables_file: 'full_list_variables.txt'
 samples_file : 'Bkg_samples.txt'
 json_output : 'Bkg_samples.json'
-nominal_path : "/data/at3/scratch3/multilepton/VLL_production/nominal"
+nominal_path : "/data/at3/common/multilepton/VLL_production/nominal"
 feather_path : "/data/at3/scratch2/multilepton/VLL_production/feather/4lepQ0"
 
 #Data configs:
