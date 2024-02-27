@@ -1,0 +1,57 @@
+
+even_base_dir: 'results/NF_FinalRun_Even'
+odd_base_dir: 'results/NF_FinalRun_Odd'
+
+split_amount : 100
+total_files : 2000
+
+regions:
+    0Z_0b_0SFOS:
+        even_path : '0Z_0b_0SFOS_NFs/Run_1801-25-05-2023'
+        odd_path  : '0Z_0b_0SFOS_NFs/Run_1805-25-05-2023'
+
+    0Z_0b_1SFOS:
+        even_path : '0Z_0b_1SFOS_NFs/Run_1552-25-05-2023'
+        odd_path  : '0Z_0b_1SFOS_NFs/Run_1556-25-05-2023'
+
+    0Z_0b_2SFOS:
+        even_path : '0Z_0b_2SFOS_NFs/Run_1553-25-05-2023'
+        odd_path  : '0Z_0b_2SFOS_NFs/Run_1557-25-05-2023'
+
+    1Z_0b_1SFOS:
+        even_path : '1Z_0b_1SFOS_NFs/Run_1554-25-05-2023'
+        odd_path  : '1Z_0b_1SFOS_NFs/Run_1557-25-05-2023'
+
+    1Z_0b_2SFOS:
+        even_path : '1Z_0b_2SFOS_NFs/Run_1555-25-05-2023'
+        odd_path  : '1Z_0b_2SFOS_NFs/Run_1556-25-05-2023'
+
+    2Z_0b:
+        even_path : '2Z_0b_NFs/Run_1555-25-05-2023'
+        odd_path  : '2Z_0b_NFs/Run_1557-25-05-2023'
+
+    0Z_1b_0SFOS:
+        even_path : '0Z_1b_0SFOS_NFs/Run_1555-25-05-2023'
+        odd_path  : '0Z_1b_0SFOS_NFs/Run_1557-25-05-2023'
+
+    0Z_1b_1SFOS:
+        even_path : '0Z_1b_1SFOS_NFs/Run_1555-25-05-2023'
+        odd_path  : '0Z_1b_1SFOS_NFs/Run_1557-25-05-2023'
+
+    0Z_1b_2SFOS:
+        even_path : '0Z_1b_2SFOS_NFs/Run_1555-25-05-2023'
+        odd_path  : '0Z_1b_2SFOS_NFs/Run_1557-25-05-2023'
+
+    1Z_1b_1SFOS:
+        even_path : '1Z_1b_1SFOS_NFs/Run_1555-25-05-2023'
+        odd_path  : '1Z_1b_1SFOS_NFs/Run_1559-25-05-2023'
+
+    1Z_1b_2SFOS:
+        even_path : '1Z_1b_2SFOS_NFs/Run_1556-25-05-2023'
+        odd_path  : '1Z_1b_2SFOS_NFs/Run_1559-25-05-2023'
+
+    2Z_1b:
+        even_path : '2Z_1b_NFs/Run_1555-25-05-2023'
+        odd_path  : '2Z_1b_NFs/Run_1558-25-05-2023'
+    
+    
