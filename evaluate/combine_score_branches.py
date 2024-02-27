@@ -111,7 +111,7 @@ if __name__ == "__main__" :
     
     #Use in_files as all the files in the AllSamples folder
     in_files = find_root_files(base_files, '')
-    print(in_files)
+    
     print("Running check for missing files...")
     missing_files = 0
     #Add a scan at the beginning that checks for all the right files
@@ -133,7 +133,7 @@ if __name__ == "__main__" :
     
     
     #For each file
-    
+    #print("Number of all files: ", len(in_files))
     for i, file in enumerate(in_files):
         
         if i < first and first!=-1:

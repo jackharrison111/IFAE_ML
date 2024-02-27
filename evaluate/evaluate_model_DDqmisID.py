@@ -44,8 +44,6 @@ def get_anomaly_score(model, df, **kwargs):
         
         anomaly_score = model.get_anomaly_score(losses, **kwargs)
         
-        #Add scaling of anomaly score? DO WE WANT THIS? OR PUT IT AS A POSTPROCESSING STEP? 
-        
     return anomaly_score.reshape(-1,1)
 
 
@@ -76,6 +74,7 @@ def predict_model(model, arr_frame, scaler_path, training_vars, **kwargs):
 
         if len(default_indices) > 0:
             scores[batch_start:batch_end][default_indices] = -999
+        print("Num default inds: ", len(default_indices))
         
         if len(non_default_indices) > 0:
             print(f"Found {len(non_default_indices)} interesting events.")
@@ -220,9 +219,13 @@ if __name__ == '__main__':
     #Loop over predefined number of files
     print(train_conf['ntuple_path'])
     all_root_files = find_root_files(train_conf['ntuple_path'], '', [])
-    #print(all_root_files, " =allfiles")
-    
+    print(all_root_files, " =allfiles")
     for i, file in enumerate(all_root_files):
+        
+        qmis_ID_file_identifier = 'QMisID'
+        if qmis_ID_file_identifier not in file:
+            print("Skipping file as not QmisID...")
+            continue
         
         if i < first and first!=-1:
             continue
@@ -230,8 +233,6 @@ if __name__ == '__main__':
             break
         
         print(f"Running file {file}. {i} / {len(all_root_files)}")
-        
-        
         
         save_path = file.split(os.path.basename(train_conf['ntuple_path']))[1]
         if save_path[0] == '/':
@@ -270,7 +271,7 @@ if __name__ == '__main__':
         for i, f in enumerate(funcs):
             all_data = f(all_data)
             print(f"Done function {i}.") #Add timing
-    
+        print(all_data.head())
         print("Total size of events: " , len(all_data))
         
         
@@ -291,7 +292,7 @@ if __name__ == '__main__':
             odd_scores = predict_model(odd_model, all_data.loc[all_data['eventNumber'] % 2 == 1],
                                       scaler_path = odd_load_dir, training_vars=train_vars)
         
-        
+        print(even_scores)
         all_scores = np.empty([events["eventNumber"].size,1])
         all_scores[events["eventNumber"]%2==0] = even_scores
         all_scores[events["eventNumber"]%2==1] = odd_scores

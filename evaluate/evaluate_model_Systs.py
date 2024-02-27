@@ -11,6 +11,9 @@ import os
 from preprocessing.create_variables import VariableMaker
 import pickle
 
+#Temporarily ignore scikit learn warnings
+import warnings
+warnings.filterwarnings('ignore')
 
 
 def scale_log_prob(log_probs, min_prob=None, max_prob=None, use_01=True):
@@ -88,7 +91,6 @@ def predict_model(model, arr_frame, scaler_path, training_vars, **kwargs):
     return scores
 
 
-
 def scale_data(data, scaler_paths) :
     for col in data.columns:
         scaler = pickle.load(open(os.path.join(scaler_paths,f'scalers/{col}_scaler.pkl'),'rb'))
@@ -135,12 +137,6 @@ if __name__ == '__main__':
     region = args.Region
     first = args.First
     last = args.Last
-    
-    #even_load_dir = 'results/AllSigs/2Z_1b_AllSigs/Run_1515-21-04-2023'
-    #odd_load_dir = 'results/AllSigs_Odd/2Z_1b_AllSigs/Run_1349-23-04-2023'
-    #region = '2Z_1b'
-    #feather_conf = 'configs/feather_configs/10GeV/2Z_1b.yaml'
-    
     
     
     #######################################################################################
@@ -231,8 +227,6 @@ if __name__ == '__main__':
         
         print(f"Running file {file}. {i} / {len(all_root_files)}")
         
-        
-        
         save_path = file.split(os.path.basename(train_conf['ntuple_path']))[1]
         if save_path[0] == '/':
             save_path = save_path[1:]
@@ -243,87 +237,130 @@ if __name__ == '__main__':
         variables = vm.varcols
         train_vars = [v for v in train_conf['training_variables'] if v not in ['eventNumber', 'weight', 'sample', 'index']]
         
-        #Load all the data 
-        try:
-            f = uproot.open(file + ':nominal',library="pd")
-        
-            if len(f.keys()) == 0:
-                print(f"WARNING:: Found no events in file: {file}.")
-                continue
-        except:
-            print(f"Found bad file, and cannot open:  {file}.")
-            continue
-        
-        #Get the variables that we need
-        #Only load the variables needed for the variable maker, plus the others needed in the train_vars
-        #that aren't produced
-
         non_produced = list(set(train_vars).difference(set(vm.created_cols)))
-
-        all_data = f.arrays(list(set(variables+non_produced)),library="pd")
-        events = f.arrays(["eventNumber"],library="np")
-        
         
         func_strings = fm.master_config[fm.master_config['variable_functions_choice']]
         funcs = [getattr(vm, s) for s in func_strings]
+        
+        
+        #Get all trees
+        with uproot.open(file) as f:
+            trees = f.keys()
+        trees = [t[:-2] for t in trees]
+        
+        #Loop over each tree
+        for j,tree in enumerate(trees):
+        
+            print(f"Running tree {tree}. {j} / {len(trees)}")
+        
+            try:
+                f = uproot.open(file + f":{tree}",library="pd")
 
-        for i, f in enumerate(funcs):
-            all_data = f(all_data)
-            print(f"Done function {i}.") #Add timing
-    
-        print("Total size of events: " , len(all_data))
+                if len(f.keys()) == 0:
+                    print(f"WARNING:: Found no events in tree: {tree}.")
+                    
+                    #TODO: Should write empty tree here
+                    continue
+            except:
+                print(f"Found bad file/tree, and cannot open:  {file}/{tree}.")
+                continue
         
-        
-        
-        
-        if odd_config['model_type'] == 'NF':
-            #Check whether any of the input variables are default, and then return a default value for the model
-            even_scores = predict_model(even_model, all_data.loc[all_data['eventNumber'] % 2 == 0],
-                                       scaler_path = even_load_dir, training_vars=train_vars, 
-                                        min_loss=min_all, max_loss=max_all)
-            odd_scores = predict_model(odd_model, all_data.loc[all_data['eventNumber'] % 2 == 1],
-                                      scaler_path = odd_load_dir, training_vars=train_vars,
-                                      min_loss=min_all, max_loss=max_all)
-        else:
-            #Check whether any of the input variables are default, and then return a default value for the model
-            even_scores = predict_model(even_model, all_data.loc[all_data['eventNumber'] % 2 == 0],
-                                       scaler_path = even_load_dir, training_vars=train_vars)
-            odd_scores = predict_model(odd_model, all_data.loc[all_data['eventNumber'] % 2 == 1],
-                                      scaler_path = odd_load_dir, training_vars=train_vars)
-        
-        
-        all_scores = np.empty([events["eventNumber"].size,1])
-        all_scores[events["eventNumber"]%2==0] = even_scores
-        all_scores[events["eventNumber"]%2==1] = odd_scores
-        
-        
-        
-        events[SCORE_NAME] = all_scores.reshape(-1)
-        
-        ######################################
-        # Add unscaled output variables here #
-        ######################################
-        
-        for col in train_vars:
-            events[f"{col}_{region}_{train_conf['model_type']}"] = all_data[col]
+            #Get the variables that we need
+            #Only load the variables needed for the variable maker, plus the others needed in the train_vars
+            #that aren't produced
+
+            all_data = f.arrays(list(set(variables+non_produced)),library="pd")
+            events = f.arrays(["eventNumber"],library="np")
+
+            print("\n--- Memory usage: ---")
+            all_data.info(verbose = False, memory_usage = 'deep')
+            print("---------------------\n")
+
+            for i, f in enumerate(funcs):
+                all_data = f(all_data)
+                print(f"Done function {i}.") #Add timing
+
             
-        
-        
-        outdir = os.path.join(train_conf['ntuple_outpath'], region)
-        
-        
-        whole_out_string = os.path.join(outdir, save_path)
-        print("Saving to: ", whole_out_string)
-        
-        print("Got base path: ", os.path.split(whole_out_string)[0])
-        if not os.path.exists(os.path.split(whole_out_string)[0]):
-            os.makedirs(os.path.split(whole_out_string)[0])
-            
-        #Need to join this with an output directory
-        with uproot.recreate(whole_out_string) as rootfile:
-            rootfile["nominal"]=events
-            gc.collect()
-            
+
+            print("Total size of events: " , len(all_data))
+
+            if odd_config['model_type'] == 'NF':
+                #Check whether any of the input variables are default, and then return a default value for the model
+                even_scores = predict_model(even_model, all_data.loc[all_data['eventNumber'] % 2 == 0],
+                                           scaler_path = even_load_dir, training_vars=train_vars, 
+                                            min_loss=min_all, max_loss=max_all)
+                odd_scores = predict_model(odd_model, all_data.loc[all_data['eventNumber'] % 2 == 1],
+                                          scaler_path = odd_load_dir, training_vars=train_vars,
+                                          min_loss=min_all, max_loss=max_all)
+            else:
+                #Check whether any of the input variables are default, and then return a default value for the model
+                even_scores = predict_model(even_model, all_data.loc[all_data['eventNumber'] % 2 == 0],
+                                           scaler_path = even_load_dir, training_vars=train_vars)
+                odd_scores = predict_model(odd_model, all_data.loc[all_data['eventNumber'] % 2 == 1],
+                                          scaler_path = odd_load_dir, training_vars=train_vars)
+
+
+            all_scores = np.empty([events["eventNumber"].size,1])
+            all_scores[events["eventNumber"]%2==0] = even_scores
+            all_scores[events["eventNumber"]%2==1] = odd_scores
+
+
+
+            events[SCORE_NAME] = all_scores.reshape(-1)
+
+            ######################################
+            # Add unscaled output variables here #
+            ######################################
+
+            for col in train_vars:
+                events[f"{col}_{region}_{train_conf['model_type']}"] = all_data[col]
+
+
+            outdir = os.path.join(train_conf['ntuple_outpath'], region)
+
+
+            whole_out_string = os.path.join(outdir, save_path)
+            print("Saving to: ", whole_out_string)
+
+            print("Got base path: ", os.path.split(whole_out_string)[0])
+            if not os.path.exists(os.path.split(whole_out_string)[0]):
+                os.makedirs(os.path.split(whole_out_string)[0])
+                
+            #WRITE THEM ALL INTO SEPARATE FILES AND THEN JUST HADD THEM AFTER
+            #Replace .root with tree.root
+            out_string_with_tree = whole_out_string.replace('.root', f"_TREE_{tree}.root")
+
+            print("Saving tree to: ", out_string_with_tree)
+            with uproot.recreate(out_string_with_tree) as rootfile:
+                rootfile[tree]=events
+                gc.collect()
+                
+            '''    
+            #Check if the first tree to be written instead of checking if it already exists
+            #if os.path.exists(whole_out_string):
+            if j != 0:
+                
+                #IF THIS FAILS, MAKE A NEW FILE AND HADD IT
+                
+                with uproot.update(whole_out_string) as rootfile:
+                    rootfile[tree] = events
+                    gc.collect()
+            else:
+                with uproot.recreate(whole_out_string) as rootfile:
+                    rootfile[tree]=events
+                    gc.collect()
+            '''
+            print(f"Done tree {tree}...")
+
+            if tree == trees[-1]:
+                #Hadd all the trees
+                all_tree_files = whole_out_string.replace('.root', '_TREE_*.root')
+
+                #hadd -f targetfile source1 source2 ...
+                print("Hadd-ing all trees to: ",whole_out_string)
+                #print(f"hadd -f {whole_out_string} {all_tree_files}")
+                os.system(f"hadd -f {whole_out_string} {all_tree_files}")
+                os.system(f"rm {all_tree_files}")
             
     print("Finished running over all requested files.")
     
