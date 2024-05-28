@@ -26,11 +26,11 @@ if __name__ == '__main__':
     os.chdir("/nfs/pic.es/user/j/jharriso/IFAE_ML")
 
     SYSTS = True
-    Q2 = True
+    Q2 = False
     eval_DD = False
     
-    job_name = "EvalSysts_Sys3"
-    job_prefix = "sys3_"
+    job_name = "FullSysts5"
+    job_prefix = "Sys5"
     
     split_amount = 25
 
@@ -43,10 +43,17 @@ if __name__ == '__main__':
     ntuplePathOut = '/data/at3/common/multilepton/VLL_production/evaluations/DD_working'
 
     
-    ntuplePathIn = '/data/at3/common/multilepton/SystProduction/Sys3'
-    ntuplePathOut = '/data/at3/common/multilepton/SystProduction/evaluations/Sys3'
+    #ntuplePathIn = '/data/at3/common/multilepton/SystProduction/Sys3'
+    #ntuplePathOut = '/data/at3/common/multilepton/SystProduction/evaluations/Sys3'
     
+    ntuplePathIn = '/data/at3/common/multilepton/SystProduction/nominal'
+    ntuplePathOut = '/data/at3/common/multilepton/SystProduction/evaluations/nominal'
     
+    ntuplePathIn = "/data/at3/common/multilepton/FinalSystProduction/Sys5"
+    ntuplePathOut  = "/data/at3/common/multilepton/FinalSystProduction/evaluations/Sys5"
+    
+    #ntuplePathIn = "/data/at3/common/separi/nominal"
+    #ntuplePathOut  = "/data/at3/common/multilepton/VLLemu/evaluations/nominal"
     
     if Q2:
         train_run_file = 'nf_Q2.yaml'
@@ -64,6 +71,7 @@ if __name__ == '__main__':
     #                '1Z_0b_1SFOS', '1Z_0b_2SFOS', '2Z_0b',
     #                '0Z_1b_0SFOS', '0Z_1b_1SFOS', '0Z_1b_2SFOS',
     #                '1Z_1b_1SFOS', '1Z_1b_2SFOS', '2Z_1b']
+    
     if Q2:
         chosen_regions = ["Q2_0b", "Q2_0b_e", "Q2_0b_eu", "Q2_0b_u",
                       "Q2_1b", "Q2_1b_e", "Q2_1b_eu", "Q2_1b_u"]
@@ -128,6 +136,8 @@ if __name__ == '__main__':
 
                 #conf_file = f"configs/training_configs/Regions/{region}/training_config.yaml"
                 func = f"python evaluate/evaluate_model_v3.py -r {region} -e {even_path} -o {odd_path} --First {s} --Last {i} -f {feather_conf} -ni {ntuplePathIn} -no {ntuplePathOut}"
+                
+                
                
                 
                 if eval_DD:
@@ -167,6 +177,8 @@ if __name__ == '__main__':
             #conf_file = f"configs/training_configs/Regions/{region}/training_config.yaml"
             #func = f"python evaluate/evaluate_model.py -r {region} -e {even_path} -o {odd_path}"
             func = f"python evaluate/evaluate_model_v3.py -r {region} -e {even_path} -o {odd_path} -f {feather_conf} -ni {ntuplePathIn} -no {ntuplePathOut}"
+            
+            os.system(func)
             
             if eval_DD:
                 func = f"python evaluate/evaluate_model_DDqmisID.py -r {region} -e {even_path} -o {odd_path} -f {feather_conf} -ni {ntuplePathIn} -no {ntuplePathOut}"
@@ -209,7 +221,7 @@ if __name__ == '__main__':
         condor.write('+flavour="long"\n')
         condor.write('request_cpus = 1\n')
 
-        condor.write('request_memory = 2 GB\n')
+        condor.write('request_memory = 8 GB\n')
         condor.write('on_exit_remove          = (ExitBySignal == False) && (ExitCode == 0)\n')
         condor.write('requirements = !regexp("AMD EPYC 7452",CPU_MODEL)\n')
         condor.write('max_retries = 1\n')

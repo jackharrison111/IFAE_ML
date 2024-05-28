@@ -1,0 +1,41 @@
+#Set the input config files
+region: '3lep'
+region_save_name : '3lep'
+
+#Bkg configs:
+use_default: True
+variables_file : 'Bkg_variables.txt'
+samples_file : 'Bkg_samples.txt'
+json_output : 'Bkg_samples.json'
+nominal_path : "/data/at3/common/multilepton/VLL_production/nominal"
+feather_path : "/data/at3/common/multilepton/VLL_production/feather/3lep"
+
+#Data configs:
+#variables_file : 'configs/Data_variables.txt'
+#samples_file : 'configs/Data_samples.txt'
+#json_output : 'configs/Data_samples.json'
+#feather_path : "/data/at3/scratch3/jharrison/nominal_feather/Regions/CR_0Z_0b_2SFOS"
+#nominal_path : "/data/at3/scratch3/jharrison/nominal/data"
+#nominal_path : "/data/at3/scratch3/multilepton/newvars/data"
+
+#VLL configs:
+#variables_file: 'configs/variable_choices/VLL_variables.txt'
+#samples_file : 'configs/sample_choices/VLL_samples.txt'
+#json_output : 'configs/sample_jsons/VLL_samples.json'
+#feather_path : "/data/at3/scratch3/jharrison/nominal_feather/Regions/CR_1Z_0b_2SFOS"
+#nominal_path : "/data/at3/scratch3/jharrison/VLL/"
+#region_name : 'CR_0Z_0b_2SFOS_VLLs_newstring'
+#region_name : 'test_region'
+
+
+cut_choice : 'cut_3lep'
+variable_functions_choice: 'no_funcs'
+
+
+cut_3lep: '(custTrigMatch_LooseID_FCLooseIso_SLT) & (trilep_type>0) & (lep_isolationFCLoose_0) & (lep_isolationFCLoose_1) & (lep_isolationFCLoose_2) & (lep_Pt_0*1e-3>10) & (lep_Pt_1*1e-3>10) & (lep_Pt_2*1e-3>10)'
+no_funcs: []
+
+
+#-----------------------------------------------------------------------------------------------------
+
+ 

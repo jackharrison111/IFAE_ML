@@ -11,7 +11,9 @@ import os
 from preprocessing.create_variables import VariableMaker
 import pickle
 
-
+#Temporarily ignore scikit learn warnings
+import warnings
+warnings.filterwarnings('ignore')
 
 def scale_log_prob(log_probs, min_prob=None, max_prob=None, use_01=True):
     
@@ -221,7 +223,8 @@ if __name__ == '__main__':
     print(train_conf['ntuple_path'])
     all_root_files = find_root_files(train_conf['ntuple_path'], '', [])
     #print(all_root_files, " =allfiles")
-    
+        
+   
     for i, file in enumerate(all_root_files):
         
         if i < first and first!=-1:
@@ -232,10 +235,22 @@ if __name__ == '__main__':
         print(f"Running file {file}. {i} / {len(all_root_files)}")
         
         
+        #Check if the file already exists and don't recreate otherwise
+        if 'tmp' in file:
+            print("Skipping file as found tmp in path...")
+            continue
         
         save_path = file.split(os.path.basename(train_conf['ntuple_path']))[1]
         if save_path[0] == '/':
             save_path = save_path[1:]
+            
+        outdir = os.path.join(train_conf['ntuple_outpath'], region)
+        whole_out_string = os.path.join(outdir, save_path)
+        
+        #if os.path.exists(whole_out_string):
+        #    print(f"Skipping file {file}, since output file already exists: {whole_out_string}")
+        #    continue
+        
         #outfile = os.path.join(ntuple_outdir,save_path)
     
         #Make the variables needed into a df:
@@ -257,23 +272,48 @@ if __name__ == '__main__':
         #Get the variables that we need
         #Only load the variables needed for the variable maker, plus the others needed in the train_vars
         #that aren't produced
+        
+        #Here check for variables in the keys
+        ntuple_variables = list(f.keys())
+        
 
         non_produced = list(set(train_vars).difference(set(vm.created_cols)))
-
-        all_data = f.arrays(list(set(variables+non_produced)),library="pd")
+        final_variables = list(set(variables+non_produced))
+        removed_MtLepMet_flag = False
+        removed_M4l_flag = False
+        if 'MtLepMet' not in ntuple_variables:
+            #Remove them from reading by uproot and make them instead
+            if 'MtLepMet' in final_variables:
+                final_variables.remove('MtLepMet')
+                removed_MtLepMet_flag = True
+            
+        if 'Mllll0123' not in ntuple_variables:
+            if 'Mllll0123' in final_variables:
+                final_variables.remove('Mllll0123')
+                removed_M4l_flag = True
+         
+        
+        all_data = f.arrays(final_variables,library="pd")
         events = f.arrays(["eventNumber"],library="np")
         
         
         func_strings = fm.master_config[fm.master_config['variable_functions_choice']]
+        
+        
+        if removed_MtLepMet_flag == True and 'MtLepMet' in train_vars:
+            #func_strings.append('get_MTLepMet')
+            func_strings = ['get_MTLepMet']+func_strings
+        if removed_M4l_flag == True and 'Mllll0123' in train_vars:
+            #func_strings.append('calc_m4l')
+            func_strings = ['calc_m4l']+func_strings
+            
         funcs = [getattr(vm, s) for s in func_strings]
-
+        
         for i, f in enumerate(funcs):
             all_data = f(all_data)
-            print(f"Done function {i}.") #Add timing
+            print(f"Done function {func_strings[i]}.") #Add timing
     
         print("Total size of events: " , len(all_data))
-        
-        
         
         
         if odd_config['model_type'] == 'NF':
@@ -309,10 +349,6 @@ if __name__ == '__main__':
             
         
         
-        outdir = os.path.join(train_conf['ntuple_outpath'], region)
-        
-        
-        whole_out_string = os.path.join(outdir, save_path)
         print("Saving to: ", whole_out_string)
         
         print("Got base path: ", os.path.split(whole_out_string)[0])

@@ -13,6 +13,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     parallel = args.parallel
+    parallel = False
     
     total_files = 1900
     split_amount = 25
@@ -23,13 +24,13 @@ if __name__ == '__main__':
     os.chdir("/nfs/pic.es/user/j/jharriso/IFAE_ML")
 
     
-    job_name = "EvalToOneTree_Systs"
+    job_name = "EvalToOneTree_missing"
     
     
     #base_dir = '/data/at3/common/multilepton/VLL_production/evaluations'
     #base_files = '/data/at3/common/multilepton/VLL_production/evaluations/Eval_Nominal'  #also outdir
 
-    base_dir = '/data/at3/common/multilepton/SystProduction/evaluations'
+    base_dir = '/data/at3/common/multilepton/SystProduction/evaluations/nominal'
     base_files = '/data/at3/common/multilepton/SystProduction/evaluations/Eval_Nominal'
     
     flavour = "long"
@@ -87,8 +88,14 @@ if __name__ == '__main__':
         execute.write('cd /nfs/pic.es/user/j/jharriso/IFAE_ML\n')               
         execute.write('eval "$(conda shell.bash hook)"\n')
         execute.write('mamba activate ML_env\n')
-                
-        func = f"python evaluate/combine_score_branches.py -d {base_dir} -b {base_files}"  
+        
+        if USE_SINGLE_TREE:
+                func = f"python evaluate/combine_single_nominal.py -d {base_dir} -o {base_files}"
+        else:
+                func = f"python evaluate/combine_score_branches.py -d {base_dir} -b {base_files}"  
+            
+        #func = f"python evaluate/combine_score_branches.py -d {base_dir} -b {base_files}"  
+        os.system(func)
         execute.write(func)
 
         execute.write(' \n')

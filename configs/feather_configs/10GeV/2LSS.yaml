@@ -1,0 +1,27 @@
+#Set the input config files
+region: '2lSS'
+region_save_name : '2lSS'
+
+#Bkg configs:
+use_default: True
+variables_file : 'Bkg_variables.txt'
+samples_file : 'Bkg_samples.txt'
+json_output : 'Bkg_samples.json'
+nominal_path : "/data/at3/common/multilepton/VLL_production/nominal"
+feather_path : "/data/at3/common/multilepton/VLL_production/feather/2lSS"
+
+
+
+cut_choice : 'cut_2lSS'
+variable_functions_choice: 'no_funcs'
+
+
+
+no_funcs: []
+cut_2lSS: '(custTrigMatch_LooseID_FCLooseIso_SLT)&(dilep_type>0)&(abs(total_charge)==2) & (lep_isolationFCLoose_0) & (lep_isolationFCLoose_1) & (lep_Pt_0*1e-3>10) & (lep_Pt_1*1e-3>10)'
+
+
+
+#-----------------------------------------------------------------------------------------------------
+
+ 

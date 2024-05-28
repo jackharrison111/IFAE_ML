@@ -227,10 +227,22 @@ if __name__ == '__main__':
         
         print(f"Running file {file}. {i} / {len(all_root_files)}")
         
+        #Check if the file already exists and don't recreate otherwise
+        if 'tmp' in file:
+            print("Skipping file as found tmp in path...")
+            continue
+        
         save_path = file.split(os.path.basename(train_conf['ntuple_path']))[1]
         if save_path[0] == '/':
             save_path = save_path[1:]
-        #outfile = os.path.join(ntuple_outdir,save_path)
+            
+        outdir = os.path.join(train_conf['ntuple_outpath'], region)
+        whole_out_string = os.path.join(outdir, save_path)
+        
+        if os.path.exists(whole_out_string):
+            print(f"Skipping file {file}, since output file already exists: {whole_out_string}")
+            continue
+        
     
         #Make the variables needed into a df:
         vm = VariableMaker()
@@ -244,9 +256,13 @@ if __name__ == '__main__':
         
         
         #Get all trees
-        with uproot.open(file) as f:
-            trees = f.keys()
-        trees = [t[:-2] for t in trees]
+        try:
+            with uproot.open(file) as f:
+                trees = f.keys()
+            trees = [t[:-2] for t in trees]
+        except:
+            print("Couldn't open file: ", file, " - Skipping...")
+            continue
         
         #Loop over each tree
         for j,tree in enumerate(trees):

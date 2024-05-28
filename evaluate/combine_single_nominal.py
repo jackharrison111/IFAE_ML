@@ -112,28 +112,56 @@ if __name__ == "__main__" :
     from utils._utils import find_root_files
     
     base_check = os.path.join(base_dir,region_folders[0])
+    ntuplePathIn = '/data/at3/common/multilepton/SystProduction/nominal'
     
-    #Use in_files as all the files in the first region folder
-    in_files = find_root_files(base_check, '')
+    #Use in_files as all the files in the first region folder - INSTEAD USE THE NOMINAL
+    in_files = find_root_files(ntuplePathIn, '')
     
     print("Running check for missing files...")
     missing_files = 0
     #Add a scan at the beginning that checks for all the right files
     
     rel_filepaths = []
-    
+    new_files = []
+    new_relpaths = []
+    already_present = []
+    empty = []
     for file in in_files:
         
-        root_file_path = os.path.relpath(file, base_check)
-        rel_filepaths.append(root_file_path)
+        root_file_path = os.path.relpath(file, ntuplePathIn)
         
         for region in region_folders:
-            
             region_file = os.path.join(base_dir,region,root_file_path)
             if not os.path.exists(region_file):
-                print(f"ERROR:: Couldn't find file {region_file}")
+                if file in empty:
+                    break
+                print(f"ERROR:: Couldn't find input evaluation: {region_file}")
+                try:
+                    f = uproot.open(file + ':nominal',library="pd")
+                    if len(f.keys()) == 0:
+                        print(f"CAUSE:: Found no events in file: {file}.")
+                        missing_files -=1
+                        empty.append(file)
+                except:
+                    print("Couldn't open file for some reason... ", file)
                 missing_files+=1
                 
+        # Also check if there are any files already there
+        outfile = os.path.join(out_dir, root_file_path)
+        if not os.path.exists(outfile):
+            if file not in empty:
+                new_files.append(file)
+                new_relpaths.append(root_file_path)
+        else:
+            already_present.append(file)
+        
+        rel_filepaths.append(root_file_path)
+        
+    print(f"Found {len(new_files)} missing:")
+    for f in new_files:
+        print("  '", f, "',")
+        
+    print(f"Got {len(already_present)} already done")
                 
     if missing_files > 0:
         raise Exception(f"TERMINATING:: {missing_files} missing input files.")
@@ -141,15 +169,21 @@ if __name__ == "__main__" :
     print("Finished check, no missing files.")
     
     
+    
+    
+    
     #Now run the loop for all the files found.
     
-    for i, file in enumerate(rel_filepaths):
+    for i, file in enumerate(new_relpaths):
         
         if i < first and first!=-1:
             continue
         if i > last and last!=-1:
             break
+        
             
+        print(f"Running file {file}. {i} / {len(rel_filepaths)}")
+        
         
         #print(file)
         merge_list = [os.path.join(base_dir, r, file) for r in region_folders]
