@@ -12,7 +12,7 @@ output plots required.
 
 import yaml
 import os
-from binning.utils.data_retriever import get_dataset, get_data_scaling, scale_log_prob
+from binning.utils.data_retriever import get_dataset, get_data_scaling, scale_log_prob, get_data_from_feather
 
 from binning.algs.model_independent import run_binning_alg
 
@@ -25,12 +25,15 @@ plt.style.use(hep.style.ATLAS)
 if __name__ == '__main__':
 
     #Load the training runs 
+    read_from_feather = True
+    feather_path = "/data/at3/common/multilepton/FinalSystProduction/feather/Regions"
+    
 
     trainrun_file = 'evaluate/region_settings/nf_NewYields.yaml'
     #trainrun_file = 'evaluate/region_settings/nf_Q2.yaml'
     #output_folder = 'binning/outputs/modelIndepQ2'
-    output_folder = 'binning/outputs/ModelDepQ2'
-    make_plots = False
+    output_folder = 'binning/outputs/ModelIndepQ0_Prod3'
+    make_plots = True
 
 
     #Set the regions to run over
@@ -38,11 +41,11 @@ if __name__ == '__main__':
         r_config = yaml.safe_load(f)
 
     chosen_regions = [
-        '0Z_0b_0SFOS',
-        '0Z_0b_1SFOS',
-        '0Z_0b_2SFOS',
-        '1Z_0b_1SFOS',
-        '1Z_0b_2SFOS',
+        #'0Z_0b_0SFOS',
+        #'0Z_0b_1SFOS',
+        #'0Z_0b_2SFOS',
+        #'1Z_0b_1SFOS',
+        #'1Z_0b_2SFOS',
         '2Z_0b'
         ]
     
@@ -70,25 +73,40 @@ if __name__ == '__main__':
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
 
-        dataset = get_dataset(region, r_config, old_name=True, use_val=False)
-        even_dir = os.path.join(r_config['even_base_dir'],r_config['regions'][region]['even_path'])
-        odd_dir = os.path.join(r_config['odd_base_dir'],r_config['regions'][region]['odd_path'])
-        min_scale, max_scale = get_data_scaling(even_dir, odd_dir)
-        region_scores, _,_ = scale_log_prob(dataset['all_scores'], min_prob=min_scale, max_prob=max_scale)
-        
-        region_sigs,_,_ = scale_log_prob(dataset['all_sigs'], min_prob=min_scale, max_prob=max_scale)
+        # Change get dataset to get the run 3 scores from feathers
+        if read_from_feather:
+            region_file = region+ "_10GeV.ftr"
+            dataset = get_data_from_feather(os.path.join(feather_path,region_file), r_config, region)
+            region_scores = dataset['all_scores']
+        else:
+            dataset = get_dataset(region, r_config, old_name=True)
 
+            even_dir = os.path.join(r_config['even_base_dir'],r_config['regions'][region]['even_path'])
+            odd_dir = os.path.join(r_config['odd_base_dir'],r_config['regions'][region]['odd_path'])
+            min_scale, max_scale = get_data_scaling(even_dir, odd_dir)
+            region_scores, _,_ = scale_log_prob(dataset['all_scores'], min_prob=min_scale, max_prob=max_scale)
+        
+            region_sigs,_,_ = scale_log_prob(dataset['all_sigs'], min_prob=min_scale, max_prob=max_scale)
+
+        print("Succesfully got input data for 0b region, sum of weights: ", sum(dataset['all_weights']))
         #Repeat for 1b regions
         region_1b = region.replace('0b', '1b')
-        dataset_1b = get_dataset(region_1b, r_config, old_name=True)
-        even_dir_1b = os.path.join(r_config['even_base_dir'],r_config['regions'][region_1b]['even_path'])
-        odd_dir_1b = os.path.join(r_config['odd_base_dir'],r_config['regions'][region_1b]['odd_path'])
-        min_scale, max_scale = get_data_scaling(even_dir_1b, odd_dir_1b)
-        region_scores_1b, _,_ = scale_log_prob(dataset_1b['all_scores'], min_prob=min_scale, max_prob=max_scale)
-        region_sigs_1b,_,_ = scale_log_prob(dataset_1b['all_sigs'], min_prob=min_scale, max_prob=max_scale)
+        if read_from_feather:
+            region_file = region_1b + "_10GeV.ftr"
+            dataset_1b = get_data_from_feather(os.path.join(feather_path,region_file), r_config, region_1b)
+            region_scores_1b = dataset_1b['all_scores']
+        else:
+            dataset_1b = get_dataset(region_1b, r_config, old_name=True)
+        
+            even_dir_1b = os.path.join(r_config['even_base_dir'],r_config['regions'][region_1b]['even_path'])
+            odd_dir_1b = os.path.join(r_config['odd_base_dir'],r_config['regions'][region_1b]['odd_path'])
+            min_scale, max_scale = get_data_scaling(even_dir_1b, odd_dir_1b)
+            region_scores_1b, _,_ = scale_log_prob(dataset_1b['all_scores'], min_prob=min_scale, max_prob=max_scale)
+            region_sigs_1b,_,_ = scale_log_prob(dataset_1b['all_sigs'], min_prob=min_scale, max_prob=max_scale)
 
         #Call binning alg
-        print("Sum of weights before input to func: ", sum(dataset['all_weights']))
+        print("Succesfully got input data for 1b region, sum of weights: ", sum(dataset_1b['all_weights']))
+        #print("Sum of weights before input to func: ", sum(dataset['all_weights']), " , ", sum(dataset_1b['all_weights']))
         output = run_binning_alg(region_scores, region_scores_1b, dataset['all_weights'], dataset_1b['all_weights'])
 
 
