@@ -63,6 +63,46 @@ def merge_files(file_list, merge_col='eventNumber'):
     return events
 
 
+def needs_reevaluating(nom_filename, eval_filename):
+
+    #If no file already
+    if not os.path.exists(eval_filename):
+        return True
+
+    #If file
+    try:
+        nom_f = uproot.open(nom_filename)
+    except:
+        print("Couldn't open the nominal file, returning True to re-evaluate!")
+        return True
+
+    try:
+        eval_f = uproot.open(eval_filename)
+    except:
+        print("Couldn't open the eval file, returning True to re-evaluate!")
+        return True
+
+    nom_keys = nom_f.keys()
+    eval_keys = eval_f.keys()
+    if len(nom_keys) != len(eval_keys):
+        print("Got different numbers of trees in nom/eval, re-evaluating!")
+        return True
+
+    diff_flag = False
+    for key in nom_keys:
+        if ";" in key:
+            key = key.split(';')[0]
+        print("Found ", nom_f[key].num_entries, " entries in nom ", key," compared to: ", eval_f[key].num_entries)
+        if nom_f[key].num_entries != eval_f[key].num_entries:
+            diff_flag = True
+            print("Found different entries in tree:", key)
+
+    if not diff_flag:
+        return False
+    
+    return True
+
+
 
 if __name__ == "__main__" :
     
@@ -112,63 +152,73 @@ if __name__ == "__main__" :
     from utils._utils import find_root_files
     
     base_check = os.path.join(base_dir,region_folders[0])
-    ntuplePathIn = '/data/at3/common/multilepton/SystProduction/nominal'
+    #ntuplePathIn = '/data/at3/common/multilepton/SystProduction/nominal'
+    ntuplePathIn = '/data/at3/common/multilepton/FinalSystProduction/nominal'
     
     #Use in_files as all the files in the first region folder - INSTEAD USE THE NOMINAL
     in_files = find_root_files(ntuplePathIn, '')
-    
-    print("Running check for missing files...")
-    missing_files = 0
-    #Add a scan at the beginning that checks for all the right files
-    
-    rel_filepaths = []
-    new_files = []
-    new_relpaths = []
-    already_present = []
-    empty = []
-    for file in in_files:
+
+    check_missing = True
+
+    # THIS IS SUPER SLOW TO RUN
+    # NEEDS FIXING
+    if check_missing:
+        print("Running check for missing files...")
+        missing_files = 0
+        #Add a scan at the beginning that checks for all the right files
         
-        root_file_path = os.path.relpath(file, ntuplePathIn)
+        rel_filepaths = []
+        new_files = []
+        new_relpaths = []
+        already_present = []
+        empty = []
+        for file in in_files:
+            
+            root_file_path = os.path.relpath(file, ntuplePathIn)
+            
+            for region in region_folders:
+                region_file = os.path.join(base_dir,region,root_file_path)
+                if not os.path.exists(region_file):
+                    if file in empty:
+                        break
+                    print(f"ERROR:: Couldn't find input evaluation: {region_file}")
+                    try:
+                        f = uproot.open(file + ':nominal',library="pd")
+                        if len(f.keys()) == 0:
+                            print(f"CAUSE:: Found no events in file: {file}.")
+                            missing_files -=1
+                            empty.append(file)
+                    except:
+                        print("Couldn't open file for some reason... ", file)
+                    missing_files+=1
+                    
+            # Also check if there are any files already there
+            outfile = os.path.join(out_dir, root_file_path)
+            if not os.path.exists(outfile):
+                if file not in empty:
+                    new_files.append(file)
+                    new_relpaths.append(root_file_path)
+            else:
+                #Check if the path needs reevaluating
+                if needs_reevaluating(file, outfile):
+                    new_files.append(file)
+                    new_relpaths.append(root_file_path)
+                    print("Found file that needs reevaluating: ", outfile)
+                else:
+                    already_present.append(file)
+            
+            rel_filepaths.append(root_file_path)
+            
+        print(f"Found {len(new_files)} missing:")
+        for f in new_files:
+            print("  '", f, "',")
+            
+        print(f"Got {len(already_present)} already done")
+                    
+        #if missing_files > 0:
+        #    raise Exception(f"TERMINATING:: {missing_files} missing input files.")
         
-        for region in region_folders:
-            region_file = os.path.join(base_dir,region,root_file_path)
-            if not os.path.exists(region_file):
-                if file in empty:
-                    break
-                print(f"ERROR:: Couldn't find input evaluation: {region_file}")
-                try:
-                    f = uproot.open(file + ':nominal',library="pd")
-                    if len(f.keys()) == 0:
-                        print(f"CAUSE:: Found no events in file: {file}.")
-                        missing_files -=1
-                        empty.append(file)
-                except:
-                    print("Couldn't open file for some reason... ", file)
-                missing_files+=1
-                
-        # Also check if there are any files already there
-        outfile = os.path.join(out_dir, root_file_path)
-        if not os.path.exists(outfile):
-            if file not in empty:
-                new_files.append(file)
-                new_relpaths.append(root_file_path)
-        else:
-            already_present.append(file)
-        
-        rel_filepaths.append(root_file_path)
-        
-    print(f"Found {len(new_files)} missing:")
-    for f in new_files:
-        print("  '", f, "',")
-        
-    print(f"Got {len(already_present)} already done")
-                
-    if missing_files > 0:
-        raise Exception(f"TERMINATING:: {missing_files} missing input files.")
-    
-    print("Finished check, no missing files.")
-    
-    
+        print(f"Finished check, {missing_files} missing files.")
     
     
     
@@ -180,20 +230,50 @@ if __name__ == "__main__" :
             continue
         if i > last and last!=-1:
             break
-        
             
-        print(f"Running file {file}. {i} / {len(rel_filepaths)}")
-        
-        
+        print(f"Running file {file}. {i} / {len(new_relpaths)}")
+
+        if '700399' not in file:
+            continue
+            
         #print(file)
-        merge_list = [os.path.join(base_dir, r, file) for r in region_folders]
         
+        #TODO: Check if the length of the input file is zero
+        try:
+            nom_file = uproot.open(os.path.join(ntuplePathIn, file))
+            num_events = nom_file['nominal'].num_entries
+            if num_events == 0:
+                print("Input nominal file is empty... Skipping!")
+                continue
+        except:
+            print("Couldn't open nominal file for some reason... skipping!")
+
+        
+        outfile = os.path.join(out_dir, file)
+        if os.path.exists(outfile):
+            if not needs_reevaluating(nom_file, outfile):
+                print("Found a file that doesn't need to be reproduced! Skipping...")
+                continue
+
+        
+        
+        merge_list = [os.path.join(base_dir, r, file) for r in region_folders]
+
+        skipper = False
+        for file in merge_list:
+            if not os.path.exists(file):
+                print("Found file that doesn't exist: ", file)
+                print("Skipping!")
+                skipper = True
+        if skipper:
+            continue
+            
         events = merge_files(merge_list)
         
         
         
         tracemalloc.start()
-        outfile = os.path.join(out_dir, file)
+        
     
         #Make directory if it doesnt exist
         outfile_base = os.path.dirname(outfile)
@@ -210,7 +290,7 @@ if __name__ == "__main__" :
         tracemalloc.stop()
         
         
-        print(f"Done file {i} / {len(in_files)}")
+        print(f"Done file {i} / {len(new_relpaths)}")
         
         
     f = time.time()
