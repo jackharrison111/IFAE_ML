@@ -57,7 +57,7 @@ class DatasetHandler():
             
             self.calculate_mcweight()
             
-            #self.add_additional_weight()
+            self.add_additional_weight()
 
             self.reduce_to_training_variables(self.config['training_variables'])
             

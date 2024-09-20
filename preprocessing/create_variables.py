@@ -64,21 +64,42 @@ class VariableMaker():
         mll_columns = list(self.pairings.keys())
         if len(df) == 0:
             return df
+
+        best_Zllpairs = []
+        other_Zllpairs = []
+        best_mZlls = []
+        other_mZlls = []
         
         for i in range(len(df)):
-            best_pair = -999
-            best_mass = -999
+            #best_pair = -999
+            #best_mass = -999
             
-            df.loc[i, 'best_Zllpair'] = -999
-            df.loc[i, 'best_mZll'] = -999
-            df.loc[i, 'other_Zllpair'] = -999
-            df.loc[i, 'other_mZll'] = -999
+            #df.loc[i, 'best_Zllpair'] = -999
+            #df.loc[i, 'best_mZll'] = -999
+            #df.loc[i, 'other_Zllpair'] = -999
+            #df.loc[i, 'other_mZll'] = -999
+
+            best_pair = "-999"
+            #df.loc[i, 'best_Zllpair'] = "-999"
+            #df.loc[i, 'other_Zllpair'] = "-999"
+
+            best_mass = -999
+            #df.loc[i, 'best_mZll'] = -999
+            #df.loc[i, 'other_mZll'] = -999
             
             #Check that there are 4 leptons
             if df.loc[i, 'quadlep_type'] < 1:
+                best_Zllpairs.append(best_pair)
+                best_mZlls.append(best_mass)
+                other_Zllpairs.append("-999")
+                other_mZlls.append(-999)
                 #print(type(df.loc[i, 'quadlep_type']), df.loc[i,'quadlep_type'])
                 continue
             if df.loc[i,'quadlep_type'] in [2,4]:
+                best_Zllpairs.append(best_pair)
+                best_mZlls.append(best_mass)
+                other_Zllpairs.append("-999")
+                other_mZlls.append(-999)
                 #print("Wrong leptype")
                 continue
                 
@@ -90,7 +111,7 @@ class VariableMaker():
                     
                 #Check 1Z mass
                 if abs(df.loc[i,col]-91.2e3)<10e3 and abs(df.loc[i, pair]-91.2e3)>10e3:
-                    if best_pair == -999:
+                    if best_pair == "-999":
                         best_pair = col
                         best_mass = df.loc[i,col]
                     else:
@@ -98,39 +119,72 @@ class VariableMaker():
                             best_pair = col
                             best_mass = df.loc[i,col]
 
-            if best_pair == -999: #Didn't find
-                continue
-                
+            #if best_pair == "-999": #Didn't find
+            #    continue
+
+            '''
             df.loc[i, 'best_Zllpair'] = best_pair
             df.loc[i, 'best_mZll'] = best_mass
-            df.loc[i, 'other_Zllpair'] = self.pairings.get(best_pair,-999)
-            if best_pair == -999:
+            df.loc[i, 'other_Zllpair'] = self.pairings.get(best_pair,"-999")
+            if best_pair == "-999":
                 df.loc[i, 'other_mZll'] = -999
             else:
                 df.loc[i, 'other_mZll'] = df.loc[i, self.pairings[best_pair]]
+            '''
+            
+            best_Zllpairs.append(best_pair)
+            best_mZlls.append(best_mass)
+            other_Zllpairs.append(self.pairings.get(best_pair,"-999"))
+            if best_pair == "-999":
+                other_mZlls.append(-999)
+            else:
+                other_mZlls.append(df.loc[i, self.pairings[best_pair]])
 
-        #print(f"Found {len(df.loc[df['other_mZll'].isna()])} events that don't match a 1Z event. Dropping them!")
-        #df.dropna(subset=['best_Zllpair','best_mZll','other_Zllpair','other_mZll'], inplace=True)
+        df.loc[:,'best_Zllpair'] = best_Zllpairs
+        df.loc[:,'best_mZll'] = best_mZlls
+        df.loc[:, 'other_Zllpair'] = other_Zllpairs
+        df.loc[:, 'other_mZll'] = other_mZlls
+        
         return df
     
 
     def find_Z_pairs_2Z(self, df):
+
+        best_Zllpairs = []
+        other_Zllpairs = []
+        best_mZlls = []
+        other_mZlls = []
         
         for i in range(len(df)):
             
-            best_pair = -999
+            #best_pair = -999
+            #best_mass = -999
+            #df.loc[i, 'best_Zllpair'] = -999
+            #df.loc[i, 'best_mZll'] = -999
+            #df.loc[i, 'other_Zllpair'] = -999
+            #df.loc[i, 'other_mZll'] = -999
+
+            best_pair = "-999"
+            #df.loc[i, 'best_Zllpair'] = "-999"
+            #df.loc[i, 'other_Zllpair'] = "-999"
+
             best_mass = -999
-            df.loc[i, 'best_Zllpair'] = -999
-            df.loc[i, 'best_mZll'] = -999
-            df.loc[i, 'other_Zllpair'] = -999
-            df.loc[i, 'other_mZll'] = -999
+            #df.loc[i, 'best_mZll'] = -999
+            #df.loc[i, 'other_mZll'] = -999
             
             #Check that there are 4 leptons, Q=0
             if df.loc[i, 'quadlep_type'] < 1 or df.loc[i, 'total_charge'] != 0:
-                #print(df.loc[i,'quadlep_type'], " = quadlep_type, ", df.loc[i,'total_charge'])
+                best_Zllpairs.append(best_pair)
+                best_mZlls.append(best_mass)
+                other_Zllpairs.append("-999")
+                other_mZlls.append(-999)
                 continue
+                
             if df.loc[i, 'quadlep_type'] in [2,4]:
-                #print(df.loc[i,'quadlep_type'], " = quadlep_type, ", df.loc[i,'total_charge'])
+                best_Zllpairs.append(best_pair)
+                best_mZlls.append(best_mass)
+                other_Zllpairs.append("-999")
+                other_mZlls.append(-999)
                 continue
             
             for col, pair in self.pairings.items():
@@ -144,7 +198,7 @@ class VariableMaker():
                 #Check for 2Z's
                 if abs(df.loc[i,col]-91.2e3)<10e3 and abs(df.loc[i, pair]-91.2e3)<10e3:
                     
-                    if best_pair == -999:
+                    if best_pair == "-999":
                         if abs(df.loc[i,col]-91.2e3) < abs(df.loc[i, pair]-91.2e3):
                             best_pair = col
                             best_mass = df.loc[i,col]
@@ -160,14 +214,34 @@ class VariableMaker():
                                 best_pair = pair
                                 best_mass = df.loc[i,pair]
 
+            
+            best_Zllpairs.append(best_pair)
+            best_mZlls.append(best_mass)
+            other_Zllpairs.append(self.pairings.get(best_pair,"-999"))
+            if best_pair == "-999":
+                other_mZlls.append(-999)
+            else:
+                other_mZlls.append(df.loc[i, self.pairings[best_pair]])
+            
+            '''
             df.loc[i, 'best_Zllpair'] = best_pair
+            df.loc[i, 'other_Zllpair'] = self.pairings.get(best_pair,"-999")
+            
             df.loc[i, 'best_mZll'] = best_mass
-            df.loc[i, 'other_Zllpair'] = self.pairings.get(best_pair,-999)
-            if best_pair == -999:
+            if best_pair == "-999":
                 df.loc[i, 'other_mZll'] = -999
             else:
                 df.loc[i, 'other_mZll'] = df.loc[i, self.pairings[best_pair]]
 
+            df.loc[i,'best_Zllpair'] = str(df.loc[i,'best_Zllpair'])
+            df.loc[i,'other_Zllpair'] = str(df.loc[i,'other_Zllpair'])
+            '''
+
+        df.loc[:,'best_Zllpair'] = best_Zllpairs
+        df.loc[:,'best_mZll'] = best_mZlls
+        df.loc[:, 'other_Zllpair'] = other_Zllpairs
+        df.loc[:, 'other_mZll'] = other_mZlls
+        
         return df
     
     
@@ -183,12 +257,15 @@ class VariableMaker():
         #Loop over dataframe
         for i in range(len(df)):
 
-            min_mass = -999
-            min_pair = -999
+            #min_mass = -999
+            #min_pair = -999
             
-            df.loc[i, 'best_Zllpair'] = -999
+            min_pair = "-999"
+            df.loc[i, 'best_Zllpair'] = "-999"
+            df.loc[i, 'other_Zllpair'] = "-999"
+
+            min_mass = -999
             df.loc[i, 'best_mZll'] = -999
-            df.loc[i, 'other_Zllpair'] = -999
             df.loc[i, 'other_mZll'] = -999
             
             #Check that there are 4 leptons, Q=0
@@ -250,7 +327,7 @@ class VariableMaker():
                             min_mass = abs(df.loc[i,'Mll12']-91.2e3)
                 
                 
-            if min_pair != -999:
+            if min_pair != "-999":
                 df.loc[i,'best_Zllpair'] = min_pair[0]
                 df.loc[i,'other_Zllpair'] = min_pair[1]
                 df.loc[i,'best_mZll'] = df.loc[i,min_pair[0]]
@@ -258,6 +335,9 @@ class VariableMaker():
                 
             else:
                 ...
+
+            df.loc[i,'best_Zllpair'] = str(df.loc[i,'best_Zllpair'])
+            df.loc[i,'other_Zllpair'] = str(df.loc[i,'other_Zllpair'])
                    
         return df
         
@@ -268,11 +348,12 @@ class VariableMaker():
         
         for i in range(len(df)):
             
-            best_pair = -999
+            best_pair = "-999"
+            df.loc[i, 'best_Zllpair'] = "-999"
+            df.loc[i, 'other_Zllpair'] = "-999"
+
             best_mass = -999
-            df.loc[i, 'best_Zllpair'] = -999
             df.loc[i, 'best_mZll'] = -999
-            df.loc[i, 'other_Zllpair'] = -999
             df.loc[i, 'other_mZll'] = -999
             
             #Check that there are 4 leptons
@@ -282,7 +363,7 @@ class VariableMaker():
             for col, pair in self.pairings.items():
                 
                 if abs(df.loc[i,col]-91.2e3)>10e3 and df.loc[i,f"lep_ID_{self.leptons[col][0]}"]==-df.loc[i,f"lep_ID_{self.leptons[col][1]}"] and df.loc[i,f"lep_ID_{self.leptons[pair][0]}"]!=-df.loc[i,f"lep_ID_{self.leptons[pair][1]}"]:
-                    if best_pair == -999:
+                    if best_pair == "-999":
                         best_pair = col
                         best_mass = df.loc[i,col]
                     else:
@@ -290,15 +371,19 @@ class VariableMaker():
                             best_pair = col
                             best_mass = df.loc[i,col]
                     
-            if best_pair == -999:
+            if best_pair == "-999":
                 continue
+                
             df.loc[i, 'best_Zllpair'] = best_pair
             df.loc[i, 'best_mZll'] = best_mass
-            df.loc[i, 'other_Zllpair'] = self.pairings.get(best_pair,-999)
-            if best_pair == -999:
+            df.loc[i, 'other_Zllpair'] = self.pairings.get(best_pair,"-999")
+            if best_pair == "-999":
                 df.loc[i, 'other_mZll'] = -999
             else:
                 df.loc[i, 'other_mZll'] = df.loc[i, self.pairings[best_pair]]
+
+            df.loc[i,'best_Zllpair'] = str(df.loc[i,'best_Zllpair'])
+            df.loc[i,'other_Zllpair'] = str(df.loc[i,'other_Zllpair'])
 
         return df
 
@@ -307,11 +392,11 @@ class VariableMaker():
         
         for i in range(len(df)):
             
-            best_pair = -999
+            best_pair = "-999"
             best_mass = -999
-            df.loc[i, 'best_Zllpair'] = -999
+            df.loc[i, 'best_Zllpair'] = "-999"
             df.loc[i, 'best_mZll'] = -999
-            df.loc[i, 'other_Zllpair'] = -999
+            df.loc[i, 'other_Zllpair'] = "-999"
             df.loc[i, 'other_mZll'] = -999
             
             #Check that there are 4 leptons
@@ -321,7 +406,7 @@ class VariableMaker():
             for col, pair in self.pairings.items():
                 
                 if abs(df.loc[i,col]-91.2e3)<10e3 and df.loc[i,f"lep_ID_{self.leptons[col][0]}"]==-df.loc[i,f"lep_ID_{self.leptons[col][1]}"] and df.loc[i,f"lep_ID_{self.leptons[pair][0]}"]!=-df.loc[i,f"lep_ID_{self.leptons[pair][1]}"]:
-                    if best_pair == -999:
+                    if best_pair == "-999":
                         best_pair = col
                         best_mass = df.loc[i,col]
                     else:
@@ -329,16 +414,19 @@ class VariableMaker():
                             best_pair = col
                             best_mass = df.loc[i,col]
 
-            if best_pair == -999:
+            if best_pair == "-999":
                 continue
                 
             df.loc[i, 'best_Zllpair'] = best_pair
             df.loc[i, 'best_mZll'] = best_mass
-            df.loc[i, 'other_Zllpair'] = self.pairings.get(best_pair,-999)
-            if best_pair == -999:
+            df.loc[i, 'other_Zllpair'] = self.pairings.get(best_pair,"-999")
+            if best_pair == "-999":
                 df.loc[i, 'other_mZll'] = -999
             else:
                 df.loc[i, 'other_mZll'] = df.loc[i, self.pairings[best_pair]]
+
+            df.loc[i,'best_Zllpair'] = str(df.loc[i,'best_Zllpair'])
+            df.loc[i,'other_Zllpair'] = str(df.loc[i,'other_Zllpair'])
 
         return df
     
@@ -349,11 +437,11 @@ class VariableMaker():
         
         for i in range(len(df)):
             
-            best_pair = -999
+            best_pair = "-999"
             best_mass = -999
-            df.loc[i, 'best_Zllpair'] = -999
+            df.loc[i, 'best_Zllpair'] = "-999"
             df.loc[i, 'best_mZll'] = -999
-            df.loc[i, 'other_Zllpair'] = -999
+            df.loc[i, 'other_Zllpair'] = "-999"
             df.loc[i, 'other_mZll'] = -999
             
             #Check that there are 4 leptons, Q=0
@@ -369,7 +457,7 @@ class VariableMaker():
                     continue
                 
                 #Pair by closest to Z. 
-                if best_pair == -999:
+                if best_pair == "-999":
                     best_pair = col
                     best_mass = df.loc[i,col]
                 else:
@@ -379,11 +467,14 @@ class VariableMaker():
                         
             df.loc[i, 'best_Zllpair'] = best_pair
             df.loc[i, 'best_mZll'] = best_mass
-            df.loc[i, 'other_Zllpair'] = self.pairings.get(best_pair,-999)
-            if best_pair == -999:
+            df.loc[i, 'other_Zllpair'] = self.pairings.get(best_pair,"-999")
+            if best_pair == "-999":
                 df.loc[i, 'other_mZll'] = -999
             else:
                 df.loc[i, 'other_mZll'] = df.loc[i, self.pairings[best_pair]]
+
+            df.loc[i,'best_Zllpair'] = str(df.loc[i,'best_Zllpair'])
+            df.loc[i,'other_Zllpair'] = str(df.loc[i,'other_Zllpair'])
             
         return df
     
@@ -394,19 +485,21 @@ class VariableMaker():
         
         best_worst = {'best_Zllpair' : 'best_ptZll',
                     'other_Zllpair': 'other_ptZll'}
-        
+
         for pair_choice, output_col in best_worst.items():
              
             
             df['l0'] = df[pair_choice].astype('str').str[-2]
             df['l1'] = df[pair_choice].astype('str').str[-1]
             
-
+            output_cols = []
+            
             for i, (id0,id1) in enumerate(zip(df['l0'],df['l1'])):
                 
                 
-                if df.loc[i, pair_choice] == -999:
-                    df.loc[i, output_col] = -999
+                if df.loc[i, pair_choice] == "-999":
+                    output_cols.append(-999)
+                    #df.loc[i, output_col] = -999
                     continue
                     
                 lv0 = ROOT.TLorentzVector()
@@ -416,9 +509,12 @@ class VariableMaker():
                 lv1.SetPtEtaPhiE(df.loc[i,f"lep_Pt_{id1}"],df.loc[i,f"lep_Eta_{id1}"],
                                  df.loc[i,f"lep_Phi_{id1}"],df.loc[i,f"lep_E_{id1}"])
 
-                df.loc[i, output_col] = (lv0+lv1).Pt()
+                #df.loc[i, output_col] = (lv0+lv1).Pt()
+                output_cols.append((lv0+lv1).Pt())
 
+            df.loc[:,output_col] = output_cols
             df.drop(columns=['l0','l1'],inplace=True)
+            
         return df
     
     
@@ -430,12 +526,16 @@ class VariableMaker():
         df['l0'] = df['best_Zllpair'].astype('str').str[-2]
         df['l1'] = df['best_Zllpair'].astype('str').str[-1]
 
-
+        
+        m3l_lows = []
+        m3l_highs = []
         for i, (id0,id1) in enumerate(zip(df['l0'],df['l1'])):
             
-            if df.loc[i, 'best_Zllpair'] == -999:
-                df.loc[i, 'M3l_low'] = -999
-                df.loc[i, 'M3l_high'] = -999
+            if df.loc[i, 'best_Zllpair'] == "-999":
+                m3l_lows.append(-999)
+                m3l_highs.append(-999)
+                #df.loc[i, 'M3l_low'] = -999
+                #df.loc[i, 'M3l_high'] = -999
                 continue
 
             lv0 = ROOT.TLorentzVector()
@@ -456,13 +556,49 @@ class VariableMaker():
                              df.loc[i,f"lep_Phi_{lep}"],df.loc[i,f"lep_E_{lep}"])
                 mlls.append((sum2+lv3).M())
             if mlls[0] > mlls[1]:
-                df.loc[i, 'M3l_low'] = mlls[1]
-                df.loc[i, 'M3l_high'] = mlls[0]
+                m3l_lows.append(mlls[1])
+                m3l_highs.append(mlls[0])
+                #df.loc[i, 'M3l_low'] = mlls[1]
+                #df.loc[i, 'M3l_high'] = mlls[0]
             else:
-                df.loc[i, 'M3l_low'] = mlls[0]
-                df.loc[i, 'M3l_high'] = mlls[1]
-                
+                m3l_lows.append(mlls[0])
+                m3l_highs.append(mlls[1])
+                #df.loc[i, 'M3l_low'] = mlls[0]
+                #df.loc[i, 'M3l_high'] = mlls[1]
+
+        df.loc[:, 'M3l_low'] = m3l_lows
+        df.loc[:, 'M3l_high'] = m3l_highs
         df.drop(columns=['l0','l1'],inplace=True)
+        return df
+    
+
+    def calc_m4l(self, df):
+        
+        if len(df) == 0:
+            return df
+        
+        df['Mllll0123'] = -999
+
+        for i in range(len(df)):
+            
+            lv0 = ROOT.TLorentzVector()
+            lv0.SetPtEtaPhiE(df.loc[i,f"lep_Pt_0"],df.loc[i,f"lep_Eta_0"],
+                             df.loc[i,f"lep_Phi_0"],df.loc[i,f"lep_E_0"])
+
+            lv1 = ROOT.TLorentzVector()
+            lv1.SetPtEtaPhiE(df.loc[i,f"lep_Pt_1"],df.loc[i,f"lep_Eta_1"],
+                             df.loc[i,f"lep_Phi_1"],df.loc[i,f"lep_E_1"])
+
+            lv2 = ROOT.TLorentzVector()
+            lv2.SetPtEtaPhiE(df.loc[i,f"lep_Pt_2"],df.loc[i,f"lep_Eta_2"],
+                             df.loc[i,f"lep_Phi_2"],df.loc[i,f"lep_E_2"])
+
+            lv3 = ROOT.TLorentzVector()
+            lv3.SetPtEtaPhiE(df.loc[i,f"lep_Pt_3"],df.loc[i,f"lep_Eta_3"],
+                             df.loc[i,f"lep_Phi_3"],df.loc[i,f"lep_E_3"])
+
+            df.loc[i,'Mllll0123'] = (lv0+lv1+lv2+lv3).M()
+            
         return df
     
     
@@ -471,6 +607,41 @@ class VariableMaker():
         df['randNumCol'] = np.random.random(size=len(df))
         df['nJets_Continuous'] = df['nJets_OR'] + df['randNumCol']
         df.drop(columns=['randNumCol'], inplace=True)
+        return df
+    
+    
+    def get_MTLepMet(self, df):
+        
+        if len(df) == 0:
+            return df
+        
+        if 'MtLepMet' in df.columns:
+            return df
+        
+        df['MtLepMet'] = -999
+        
+        for i in range(len(df)):
+
+            
+            met = ROOT.TLorentzVector()
+            met.SetPtEtaPhiM(df.loc[i,'met_met'], 0, df.loc[i,'met_phi'], 0);
+
+            lv0 = ROOT.TLorentzVector()
+            lv0.SetPtEtaPhiE(df.loc[i,f"lep_Pt_0"],df.loc[i,f"lep_Eta_0"],
+                             df.loc[i,f"lep_Phi_0"],df.loc[i,f"lep_E_0"])
+            lv1 = ROOT.TLorentzVector()
+            lv1.SetPtEtaPhiE(df.loc[i,f"lep_Pt_1"],df.loc[i,f"lep_Eta_1"],
+                             df.loc[i,f"lep_Phi_1"],df.loc[i,f"lep_E_1"])
+            
+            lv2 = ROOT.TLorentzVector()
+            lv2.SetPtEtaPhiE(df.loc[i,f"lep_Pt_0"],df.loc[i,f"lep_Eta_0"],
+                             df.loc[i,f"lep_Phi_0"],df.loc[i,f"lep_E_0"])
+            lv3 = ROOT.TLorentzVector()
+            lv3.SetPtEtaPhiE(df.loc[i,f"lep_Pt_1"],df.loc[i,f"lep_Eta_1"],
+                             df.loc[i,f"lep_Phi_1"],df.loc[i,f"lep_E_1"])
+
+            df.loc[i, 'MtLepMet'] = (lv0+lv1+lv2+lv3+met).Mt()
+            
         return df
         
         
@@ -483,11 +654,14 @@ class VariableMaker():
              
             df['l0'] = df[pair_choice].astype('str').str[-2]
             df['l1'] = df[pair_choice].astype('str').str[-1]
-
+            
+            output_cols = []
+            
             for i, (id0,id1) in enumerate(zip(df['l0'],df['l1'])):
                 
-                if df.loc[i, pair_choice] == -999:
-                    df.loc[i, output_col] = -999
+                if df.loc[i, pair_choice] == "-999":
+                    output_cols.append(-999)
+                    #df.loc[i, output_col] = -999
                     continue
                     
                 met = ROOT.TLorentzVector()
@@ -500,8 +674,10 @@ class VariableMaker():
                 lv1.SetPtEtaPhiE(df.loc[i,f"lep_Pt_{id1}"],df.loc[i,f"lep_Eta_{id1}"],
                                  df.loc[i,f"lep_Phi_{id1}"],df.loc[i,f"lep_E_{id1}"])
                 
-                df.loc[i, output_col] = (lv0+lv1+met).Mt()
+                output_cols.append((lv0+lv1+met).Mt())
+                #df.loc[i, output_col] = (lv0+lv1+met).Mt()
 
+            df.loc[:,output_col] = output_cols
             df.drop(columns=['l0','l1'],inplace=True)
             
         return df
@@ -512,9 +688,9 @@ class VariableMaker():
         #There will always be a same flavour pair
         for i in range(len(df)):
             
-            best_pair = -999
+            best_pair = "-999"
             best_mass = -999
-            other_pair = -999
+            other_pair = "-999"
             other_mass = -999
             
             '''
