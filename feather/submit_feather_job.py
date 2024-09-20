@@ -12,11 +12,16 @@ if __name__ == '__main__':
     
     os.chdir("/nfs/pic.es/user/j/jharriso/IFAE_ML")
 
-    job_name = "5lep_Adding_mcChannel"
-    outputDir = '/data/at3/common/multilepton/VLL_production/multifake_feathers/feather/5lep'
+    job_name = "0Z_0b_Rerun"
+    #outputDir = '/data/at3/common/multilepton/VLL_production/multifake_feathers/feather/5lep'
+    #outputDir = '/data/at3/common/multilepton/VLL_production/multifake_feathers/Remade'
+    #outputDir = '/data/at3/common/multilepton/FinalSystProduction/feather/OldCuts'
+    outputDir = None
     SIGNALS = False
-    FIVELEP = True
+    SUSY = False
+    FIVELEP = False
     Q2 = False
+    OLD_PROD = False
     
     regions = []
     
@@ -27,12 +32,16 @@ if __name__ == '__main__':
         regions += ['0Z_0b_0SFOS', '0Z_0b_1SFOS', '0Z_0b_2SFOS',
                     '1Z_0b_1SFOS', '1Z_0b_2SFOS', '2Z_0b',
                     '0Z_1b_0SFOS', '0Z_1b_1SFOS', '0Z_1b_2SFOS',
-                    '1Z_1b_1SFOS', '1Z_1b_2SFOS', '2Z_1b']
+                    '1Z_1b_1SFOS', '1Z_1b_2SFOS', '2Z_1b', '0Z_2SFOS']
+        #regions += ['2LSS', '3lep']
+
+        #CHANGE HERE
+        regions = ['0Z_0b_2SFOS']
         
         
     if Q2:
-        #regions += ["0b_e", "0b_eu", "0b_u", "1b_e", "1b_eu", "1b_u"]
-        regions += ["0b", "1b"]
+        regions += ["Q2_0b_e", "Q2_0b_eu", "Q2_0b_u", "Q2_1b_e", "Q2_1b_eu", "Q2_1b_u"]
+        regions += ["Q2_0b", "Q2_1b"]
 
     if FIVELEP:
         regions = ["0Z_0b_mGte", "0Z_0b_mLEQe", "1Z_0b_mGte", "1Z_0b_mLEQe", "2Z_0b_mGte", "2Z_0b_mLEQe"]
@@ -50,13 +59,19 @@ if __name__ == '__main__':
         conf_file = f"configs/feather_configs/10GeV/{region}.yaml"
         
         if SIGNALS:
-            conf_file = f"configs/feather_configs/10GeV/VLLs/{region}.yaml"
+            if SUSY:
+                conf_file = f"configs/feather_configs/10GeV/SUSY/{region}.yaml"
+            else:
+                conf_file = f"configs/feather_configs/10GeV/VLLs/{region}.yaml"
         if FIVELEP:
             conf_file = f"configs/feather_configs/10GeV/5lep/{region}.yaml"
         if Q2:
             conf_file = f"configs/feather_configs/10GeV/Q2/{region}.yaml"
             if SIGNALS and Q2:
                 conf_file = f"configs/feather_configs/10GeV/Q2/VLLs/{region}.yaml"
+
+        if OLD_PROD:
+            conf_file = f"configs/feather_configs/10GeV/old_feather_configs/4lepQ0/{region}.yaml"
         
         new_conf_file = os.path.join(scriptdir, 'feather_config.yaml')
         shutil.copyfile(conf_file, new_conf_file)
@@ -71,8 +86,10 @@ if __name__ == '__main__':
         execute.write('eval "$(conda shell.bash hook)"\n')
         execute.write('mamba activate ML_env\n')
               
-            
-        func = f"python feather/make_feather.py -c {new_conf_file} -o {outputDir}"
+        if outputDir:
+            func = f"python feather/make_feather.py -c {new_conf_file} -o {outputDir}"
+        else:
+            func = f"python feather/make_feather.py -c {new_conf_file}"
         execute.write(func)
                        
         execute.write(' \n')

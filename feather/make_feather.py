@@ -79,11 +79,14 @@ class FeatherMaker():
                 #sample_name = sample_name[1:]
                 continue
             samples = sample_list.split(',')
-            DSIDs = [path.split('/')[-1][:6] for path in samples]
+            #print("Got all samples: ", samples)
+            DSIDs = [path.split('/')[-1].strip() for path in samples]  #Changing from [:6] to make sure _AF is picked up
             for id in DSIDs:
+                #print("Found DSID!: ", id)
                 if id == '':
                     continue
-                all_samples.append(id)
+                if id not in all_samples:
+                    all_samples.append(id)
             all_samples = list(set(all_samples))
             samples_dict[sample_name] = all_samples
         if not os.path.exists(os.path.join('configs/sample_jsons', self.region)):
@@ -107,7 +110,7 @@ class FeatherMaker():
             file_paths = []
             for file in files:
                 for fp in all_files:
-                    if file in fp:
+                    if file+'.root' in fp:
                         file_paths.append(fp)
 
             self.sample_file_paths[sample] = file_paths
@@ -120,7 +123,7 @@ class FeatherMaker():
         cut_expr = self.master_config[self.master_config['cut_choice']]
         
         print(cut_expr)
-        
+        counter = 0
         #Loop over all the samples and read using uproot
         for sample, files in sample_file_paths.items():
             
@@ -139,6 +142,7 @@ class FeatherMaker():
             if 'data' in sample:
                 array = None
                 for f in nominals:
+                    print("Running file: ",f)
                     for data in uproot.iterate(f, variables, cut=cut_expr, library='np', allow_missing=True):
                         if array is None:
                             array = pd.DataFrame(data, columns=variables)
@@ -147,13 +151,17 @@ class FeatherMaker():
                             array = pd.concat([array,data])
                             array.reset_index(inplace=True,drop=True)
                             
-                    print(f"Got {len(array)} data events.")
+                            print(f"Got {len(array)} data events.")
             else:
-                array = uproot.concatenate(nominals, variables, cut=cut_expr, library='np', allow_missing=True)
+                print("Running nominals: ",nominals)
+                print("Vars: ", variables)
+                #
+                array = uproot.concatenate(nominals, variables, cut=cut_expr,  library='np', allow_missing=True)
                 array = pd.DataFrame(array, columns=variables)
             
             if type(array) == list or len(array) == 0:
                 print(sample, array)
+                print("Got empty array.")
                 continue
                 
             #Add a sample name to the feather file
@@ -163,6 +171,7 @@ class FeatherMaker():
             
             #Make additional variables
             start = perf_counter()
+            print("Got variable funcs: ", variable_funcs)
             for i, func in enumerate(variable_funcs):
                 array = func(array)
                 lap = perf_counter()
@@ -220,7 +229,6 @@ if __name__ == '__main__':
     func_strings = fm.master_config[fm.master_config['variable_functions_choice']]
     funcs = [getattr(vm, s) for s in func_strings]
     
-    funcs = []
     #Make the feather file
     fm.make_output_feather(sample_file_paths, variables, funcs)
     f = perf_counter()

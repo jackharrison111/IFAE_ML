@@ -8,7 +8,8 @@ output plots required.
 
 
 '''
-
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 import yaml
 import os
@@ -24,28 +25,39 @@ plt.style.use(hep.style.ATLAS)
 
 if __name__ == '__main__':
 
+    #TODO:
+    '''
+    ConvVeto:
+    - Need to apply this cut to the data before running the binning alg
+
+    XXX_ConvVeto: (((lep_ID_0==0)||((lep_ID_0!=0)&&(lep_ambiguityType_0==0 && lep_DFCommonAddAmbiguity_0<1)))&& ((lep_ID_1==0)||((lep_ID_1!=0)&&(lep_ambiguityType_1==0 && lep_DFCommonAddAmbiguity_1<1)))&& ((lep_ID_2==0)||((lep_ID_2!=0)&&(lep_ambiguityType_2==0 && lep_DFCommonAddAmbiguity_2<1)))&& ((lep_ID_3==0)||((lep_ID_3!=0)&&(lep_ambiguityType_3==0 && lep_DFCommonAddAmbiguity_3<1)))&& ((lep_ID_4==0)||((lep_ID_4!=0)&&(lep_ambiguityType_4==0 && lep_DFCommonAddAmbiguity_4<1)))&& ((lep_ID_5==0)||((lep_ID_5!=0)&&(lep_ambiguityType_5==0 && lep_DFCommonAddAmbiguity_5<1))))
+    
+    '''
+
     #Load the training runs 
     read_from_feather = True
     feather_path = "/data/at3/common/multilepton/FinalSystProduction/feather/Regions"
     
-
+    feather_path = "/data/at3/common/multilepton/FinalSystProduction/feather/4lepQ0"
+    
     trainrun_file = 'evaluate/region_settings/nf_NewYields.yaml'
     #trainrun_file = 'evaluate/region_settings/nf_Q2.yaml'
     #output_folder = 'binning/outputs/modelIndepQ2'
-    output_folder = 'binning/outputs/ModelIndepQ0_Prod3'
+    output_folder = 'binning/outputs/ModelIndepQ0_Prod3_ConvVetoCut_NewFeather'
     make_plots = True
 
+    apply_conv_veto = True
 
     #Set the regions to run over
     with open(trainrun_file, 'r') as f:
         r_config = yaml.safe_load(f)
 
     chosen_regions = [
-        #'0Z_0b_0SFOS',
-        #'0Z_0b_1SFOS',
-        #'0Z_0b_2SFOS',
-        #'1Z_0b_1SFOS',
-        #'1Z_0b_2SFOS',
+        '0Z_0b_0SFOS',
+        '0Z_0b_1SFOS',
+        '0Z_0b_2SFOS',
+        '1Z_0b_1SFOS',
+        '1Z_0b_2SFOS',
         '2Z_0b'
         ]
     
@@ -66,7 +78,7 @@ if __name__ == '__main__':
 
     #Get the data
 
-    for region in chosen_regions:
+    for j, region in enumerate(chosen_regions):
 
         print(f"Running region: {region}")
         out_dir = os.path.join(output_folder, region)
@@ -76,7 +88,10 @@ if __name__ == '__main__':
         # Change get dataset to get the run 3 scores from feathers
         if read_from_feather:
             region_file = region+ "_10GeV.ftr"
-            dataset = get_data_from_feather(os.path.join(feather_path,region_file), r_config, region)
+            region_file = region + "_10GeV_new.ftr"
+            
+            dataset = get_data_from_feather(os.path.join(feather_path,region_file), r_config, region,
+                                            apply_conv_veto=apply_conv_veto)
             region_scores = dataset['all_scores']
         else:
             dataset = get_dataset(region, r_config, old_name=True)
@@ -91,9 +106,14 @@ if __name__ == '__main__':
         print("Succesfully got input data for 0b region, sum of weights: ", sum(dataset['all_weights']))
         #Repeat for 1b regions
         region_1b = region.replace('0b', '1b')
+        
         if read_from_feather:
             region_file = region_1b + "_10GeV.ftr"
-            dataset_1b = get_data_from_feather(os.path.join(feather_path,region_file), r_config, region_1b)
+
+            region_file = region_1b + "_10GeV_new.ftr"
+            
+            dataset_1b = get_data_from_feather(os.path.join(feather_path,region_file), r_config, region_1b,
+                                              apply_conv_veto=apply_conv_veto)
             region_scores_1b = dataset_1b['all_scores']
         else:
             dataset_1b = get_dataset(region_1b, r_config, old_name=True)
