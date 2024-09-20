@@ -11,7 +11,9 @@ Takes as input:
 import os
 import argparse
 from set_regions import define_regions
-    
+import math 
+
+from utils._utils import find_root_files
 
 if __name__ == '__main__':
     
@@ -25,35 +27,26 @@ if __name__ == '__main__':
     
     os.chdir("/nfs/pic.es/user/j/jharriso/IFAE_ML")
 
-    SYSTS = True
-    Q2 = False
+    SYSTS = False
+    Q2 = True
     eval_DD = False
     
-    job_name = "FullSysts5"
-    job_prefix = "Sys5"
+    job_name = "FinalEval_Nom"
+    job_prefix = "Nom"
     
-    split_amount = 25
+    split_amount = 50
+    total_files = -1
+    
 
     #Set to false otherwise:
-    #Shalini's ntuples:
-    #ntuplePathIn = '/data/at3/scratch2/multilepton/Shalini_ntuples/VLL_newsamples_NN'
-    #ntuplePathOut = '/data/at3/common/multilepton/VLL_production/evaluations/Shalini_ntuples'
-
-    ntuplePathIn = '/data/at3/common/multilepton/VLL_production/nominal'
-    ntuplePathOut = '/data/at3/common/multilepton/VLL_production/evaluations/DD_working'
-
-    
-    #ntuplePathIn = '/data/at3/common/multilepton/SystProduction/Sys3'
-    #ntuplePathOut = '/data/at3/common/multilepton/SystProduction/evaluations/Sys3'
-    
-    ntuplePathIn = '/data/at3/common/multilepton/SystProduction/nominal'
-    ntuplePathOut = '/data/at3/common/multilepton/SystProduction/evaluations/nominal'
-    
-    ntuplePathIn = "/data/at3/common/multilepton/FinalSystProduction/Sys5"
-    ntuplePathOut  = "/data/at3/common/multilepton/FinalSystProduction/evaluations/Sys5"
+    ntuplePathIn = "/data/at3/common/multilepton/FinalSystProduction/nominal"
+    ntuplePathOut  = "/data/at3/common/multilepton/FinalSystProduction/evaluations/nominal"
     
     #ntuplePathIn = "/data/at3/common/separi/nominal"
     #ntuplePathOut  = "/data/at3/common/multilepton/VLLemu/evaluations/nominal"
+
+    if 'FinalSystProduction/Sys' in ntuplePathIn:
+        SYSTS = True
     
     if Q2:
         train_run_file = 'nf_Q2.yaml'
@@ -88,6 +81,18 @@ if __name__ == '__main__':
     
     flavour = "long"
 
+    if total_files==-1:
+        #Find a way to get all of the total files
+        files = find_root_files(ntuplePathIn, '', [])
+        total_files = len(files)
+        print(f"Found {total_files} to run over.")
+        rounded_total = math.ceil(total_files / split_amount) * split_amount
+        total_files = rounded_total
+        print(f"Rounded to {total_files} to run over.")
+    
+    if total_files:
+        regions['total_files'] = total_files
+
     for chosen_region in chosen_regions:
         
         region = chosen_region
@@ -119,7 +124,7 @@ if __name__ == '__main__':
                 regions['split_amount'] = split_amount
             
             s = 0
-            for i in range(regions['split_amount'], regions['total_files'], regions['split_amount']):
+            for i in range(regions['split_amount'], regions['total_files']+regions['split_amount'], regions['split_amount']):
                 
                 #Make the executable file
                 sh_name = os.path.join(scriptdir,f"{region}_{s}_{i}.sh")
@@ -178,7 +183,7 @@ if __name__ == '__main__':
             #func = f"python evaluate/evaluate_model.py -r {region} -e {even_path} -o {odd_path}"
             func = f"python evaluate/evaluate_model_v3.py -r {region} -e {even_path} -o {odd_path} -f {feather_conf} -ni {ntuplePathIn} -no {ntuplePathOut}"
             
-            os.system(func)
+            #os.system(func)
             
             if eval_DD:
                 func = f"python evaluate/evaluate_model_DDqmisID.py -r {region} -e {even_path} -o {odd_path} -f {feather_conf} -ni {ntuplePathIn} -no {ntuplePathOut}"

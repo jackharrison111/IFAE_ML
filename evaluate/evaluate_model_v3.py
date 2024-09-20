@@ -15,6 +15,49 @@ import pickle
 import warnings
 warnings.filterwarnings('ignore')
 
+
+def needs_reevaluating(nom_filename, eval_filename):
+
+    #If no file already
+    print("Nom file: ", nom_filename)
+    print("Eval file: ", eval_filename)
+    if not os.path.exists(eval_filename):
+        return True
+
+    #If file
+    try:
+        nom_f = uproot.open(nom_filename)
+    except:
+        print("Couldn't open the nominal file, returning True to re-evaluate!")
+        return True
+
+    try:
+        eval_f = uproot.open(eval_filename)
+    except:
+        print("Couldn't open the eval file, returning True to re-evaluate!")
+        return True
+
+    nom_keys = nom_f.keys()
+    eval_keys = eval_f.keys()
+    if len(nom_keys) != len(eval_keys):
+        print("Got different numbers of trees in nom/eval, re-evaluating!")
+        return True
+
+    diff_flag = False
+    for key in nom_keys:
+        if ";" in key:
+            key = key.split(';')[0]
+        print("Found ", nom_f[key].num_entries, " entries in nom ", key," compared to: ", eval_f[key].num_entries)
+        if nom_f[key].num_entries != eval_f[key].num_entries:
+            print("Found ", nom_f[key].num_entries, " entries in nom ", key," compared to: ", eval_f[key].num_entries)
+            diff_flag = True
+            #print("Found different entries in tree:", key)
+
+    if not diff_flag:
+        return False
+    
+    return True
+
 def scale_log_prob(log_probs, min_prob=None, max_prob=None, use_01=True):
     
         if use_01:
@@ -78,6 +121,7 @@ def predict_model(model, arr_frame, scaler_path, training_vars, **kwargs):
 
         if len(default_indices) > 0:
             scores[batch_start:batch_end][default_indices] = -999
+            print("Setting ", len(default_indices), " to -999...")
         
         if len(non_default_indices) > 0:
             print(f"Found {len(non_default_indices)} interesting events.")
@@ -137,6 +181,8 @@ if __name__ == '__main__':
     region = args.Region
     first = args.First
     last = args.Last
+
+    check_reeval = False
     
     #even_load_dir = 'results/AllSigs/2Z_1b_AllSigs/Run_1515-21-04-2023'
     #odd_load_dir = 'results/AllSigs_Odd/2Z_1b_AllSigs/Run_1349-23-04-2023'
@@ -223,8 +269,7 @@ if __name__ == '__main__':
     print(train_conf['ntuple_path'])
     all_root_files = find_root_files(train_conf['ntuple_path'], '', [])
     #print(all_root_files, " =allfiles")
-        
-   
+
     for i, file in enumerate(all_root_files):
         
         if i < first and first!=-1:
@@ -233,19 +278,26 @@ if __name__ == '__main__':
             break
         
         print(f"Running file {file}. {i} / {len(all_root_files)}")
-        
+
+        if '364250' not in file and '364288' not in file and '364289' not in file and '364290' not in file:
+            continue
         
         #Check if the file already exists and don't recreate otherwise
         if 'tmp' in file:
             print("Skipping file as found tmp in path...")
             continue
-        
+
         save_path = file.split(os.path.basename(train_conf['ntuple_path']))[1]
         if save_path[0] == '/':
             save_path = save_path[1:]
             
         outdir = os.path.join(train_conf['ntuple_outpath'], region)
         whole_out_string = os.path.join(outdir, save_path)
+
+        if check_reeval:
+            if not needs_reevaluating(file, whole_out_string):
+                print("Found file that doesn't need evaluating... skipping!")
+                continue
         
         #if os.path.exists(whole_out_string):
         #    print(f"Skipping file {file}, since output file already exists: {whole_out_string}")
@@ -260,8 +312,9 @@ if __name__ == '__main__':
         
         #Load all the data 
         try:
+            print("Opening nominal...")
             f = uproot.open(file + ':nominal',library="pd")
-        
+            print("Opened file.")
             if len(f.keys()) == 0:
                 print(f"WARNING:: Found no events in file: {file}.")
                 continue

@@ -1,7 +1,8 @@
 import os
 import argparse
 from set_regions import define_regions
-
+from utils._utils import find_root_files
+import math
 
 if __name__ == '__main__':
     
@@ -9,29 +10,56 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-s", "--submit",default=False, help="Choose whether to submit the jobs or not", type=bool)
     parser.add_argument("-m", "--mergeTree",default=False, help="Choose whether to merge all to one tree or not.", type=bool)
-    parser.add_argument("-p", "--parallel",default=True, help="Choose whether to submit the jobs in parallel", type=bool)
+    parser.add_argument("-p", "--parallel",default=False, help="Choose whether to submit the jobs in parallel", type=bool)
     args = parser.parse_args()
 
     parallel = args.parallel
-    parallel = False
+    #parallel = False
     
-    total_files = 1900
+    total_files = -1
+
+    
+    
+    #If total_files = -1, get all the files in the folder?
+
+    
     split_amount = 25
-    memory = 8
+    memory = 16
+    SYSTEMATICS = False
     
     USE_SINGLE_TREE = args.mergeTree
+
+    if SYSTEMATICS:
+        USE_SINGLE_TREE = False
+
+
+    
     
     os.chdir("/nfs/pic.es/user/j/jharriso/IFAE_ML")
 
     
-    job_name = "EvalToOneTree_missing"
+    job_name = "CombineNom_2009"
     
     
     #base_dir = '/data/at3/common/multilepton/VLL_production/evaluations'
     #base_files = '/data/at3/common/multilepton/VLL_production/evaluations/Eval_Nominal'  #also outdir
 
-    base_dir = '/data/at3/common/multilepton/SystProduction/evaluations/nominal'
-    base_files = '/data/at3/common/multilepton/SystProduction/evaluations/Eval_Nominal'
+    #base_dir = '/data/at3/common/multilepton/SystProduction/evaluations/nominal'
+    #base_files = '/data/at3/common/multilepton/SystProduction/evaluations/Eval_Nominal'
+
+    base_dir = '/data/at3/common/multilepton/FinalSystProduction/evaluations/nominal'
+    base_files = '/data/at3/common/multilepton/FinalSystProduction/evaluations/Eval_Nominal_v2'
+
+    #Check this in combine_single_nominal.py too
+    ntuplePathIn = '/data/at3/common/multilepton/FinalSystProduction/nominal'
+    
+
+    #Change this for each sys folder
+    if SYSTEMATICS:
+        base_dir = '/data/at3/common/multilepton/FinalSystProduction/evaluations/Sys1'
+        base_files = '/data/at3/common/multilepton/FinalSystProduction/evaluations/Eval_Sys1'
+        
+    sys_base_dir = '/data/at3/common/multilepton/FinalSystProduction/Sys1'
     
     flavour = "long"
     
@@ -46,6 +74,14 @@ if __name__ == '__main__':
     if not os.path.exists(os.path.join(scriptdir,'errs')):
         os.makedirs(os.path.join(scriptdir,'errs'))
 
+    if total_files==-1:
+        #Find a way to get all of the total files
+        files = find_root_files(ntuplePathIn, '', [])
+        total_files = len(files)
+        print(f"Found {total_files} to run over.")
+        rounded_total = math.ceil(total_files / split_amount) * split_amount
+        total_files = rounded_total
+        print(f"Rounded to {total_files} to run over.")
         
     if parallel:
         
@@ -65,6 +101,8 @@ if __name__ == '__main__':
             
             if USE_SINGLE_TREE:
                 func = f"python evaluate/combine_single_nominal.py -d {base_dir} -o {base_files} --First {s} --Last {i}"
+            elif SYSTEMATICS:
+                func = f"python evaluate/combine_systematics.py -d {base_dir} -o {base_files} --First {s} --Last {i} -r {sys_base_dir}"
             else:
                 func = f"python evaluate/combine_score_branches.py -d {base_dir} -b {base_files} --First {s} --Last {i}"  
             
@@ -90,12 +128,14 @@ if __name__ == '__main__':
         execute.write('mamba activate ML_env\n')
         
         if USE_SINGLE_TREE:
-                func = f"python evaluate/combine_single_nominal.py -d {base_dir} -o {base_files}"
+            func = f"python evaluate/combine_single_nominal.py -d {base_dir} -o {base_files}"
+        elif SYSTEMATICS:
+            func = f"python evaluate/combine_systematics.py -d {base_dir} -o {base_files} -r {sys_base_dir}"
         else:
-                func = f"python evaluate/combine_score_branches.py -d {base_dir} -b {base_files}"  
+            func = f"python evaluate/combine_score_branches.py -d {base_dir} -b {base_files}"  
             
         #func = f"python evaluate/combine_score_branches.py -d {base_dir} -b {base_files}"  
-        os.system(func)
+        #os.system(func)
         execute.write(func)
 
         execute.write(' \n')

@@ -271,7 +271,7 @@ if __name__ == '__main__':
         for i, f in enumerate(funcs):
             all_data = f(all_data)
             print(f"Done function {i}.") #Add timing
-        print(all_data.head())
+        
         print("Total size of events: " , len(all_data))
         
         
@@ -292,7 +292,7 @@ if __name__ == '__main__':
             odd_scores = predict_model(odd_model, all_data.loc[all_data['eventNumber'] % 2 == 1],
                                       scaler_path = odd_load_dir, training_vars=train_vars)
         
-        print(even_scores)
+        
         all_scores = np.empty([events["eventNumber"].size,1])
         all_scores[events["eventNumber"]%2==0] = even_scores
         all_scores[events["eventNumber"]%2==1] = odd_scores

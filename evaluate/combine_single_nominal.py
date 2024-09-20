@@ -158,7 +158,7 @@ if __name__ == "__main__" :
     #Use in_files as all the files in the first region folder - INSTEAD USE THE NOMINAL
     in_files = find_root_files(ntuplePathIn, '')
 
-    check_missing = True
+    check_missing = False
 
     # THIS IS SUPER SLOW TO RUN
     # NEEDS FIXING
@@ -223,7 +223,9 @@ if __name__ == "__main__" :
     
     
     #Now run the loop for all the files found.
-    
+    if not check_missing:
+        new_relpaths = [os.path.relpath(f, ntuplePathIn) for f in in_files]
+        
     for i, file in enumerate(new_relpaths):
         
         if i < first and first!=-1:
@@ -233,8 +235,8 @@ if __name__ == "__main__" :
             
         print(f"Running file {file}. {i} / {len(new_relpaths)}")
 
-        if '700399' not in file:
-            continue
+        #if '700399' not in file and '700349' not in file:
+        #    continue
             
         #print(file)
         
@@ -250,7 +252,8 @@ if __name__ == "__main__" :
 
         
         outfile = os.path.join(out_dir, file)
-        if os.path.exists(outfile):
+        nom_file = in_files[i]
+        if os.path.exists(outfile):  #NOM FILE NOT OPENING
             if not needs_reevaluating(nom_file, outfile):
                 print("Found a file that doesn't need to be reproduced! Skipping...")
                 continue
@@ -267,7 +270,8 @@ if __name__ == "__main__" :
                 skipper = True
         if skipper:
             continue
-            
+
+        #TODO CHECK WHETHER THE N EVENTS ARE THE SAME? WHY AREN'T THEY?
         events = merge_files(merge_list)
         
         

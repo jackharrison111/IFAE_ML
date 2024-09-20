@@ -16,6 +16,45 @@ import warnings
 warnings.filterwarnings('ignore')
 
 
+def needs_reevaluating(nom_filename, eval_filename):
+
+    #If no file already
+    if not os.path.exists(eval_filename):
+        return True
+
+    #If file
+    try:
+        nom_f = uproot.open(nom_filename)
+    except:
+        print("Couldn't open the nominal file, returning True to re-evaluate!")
+        return True
+
+    try:
+        eval_f = uproot.open(eval_filename)
+    except:
+        print("Couldn't open the eval file, returning True to re-evaluate!")
+        return True
+
+    nom_keys = nom_f.keys()
+    eval_keys = eval_f.keys()
+    if len(nom_keys) != len(eval_keys):
+        print("Got different numbers of trees in nom/eval, re-evaluating!")
+        return True
+
+    diff_flag = False
+    for key in nom_keys:
+        if ";" in key:
+            key = key.split(';')[0]
+        if nom_f[key].num_entries != eval_f[key].num_entries:
+            print("Found ", nom_f[key].num_entries, " entries in nom ", key," compared to: ", eval_f[key].num_entries)
+            diff_flag = True
+            #print("Found different entries in tree:", key)
+
+    if not diff_flag:
+        return False
+    
+    return True
+
 def scale_log_prob(log_probs, min_prob=None, max_prob=None, use_01=True):
     
         if use_01:
@@ -238,10 +277,14 @@ if __name__ == '__main__':
             
         outdir = os.path.join(train_conf['ntuple_outpath'], region)
         whole_out_string = os.path.join(outdir, save_path)
-        
-        if os.path.exists(whole_out_string):
-            print(f"Skipping file {file}, since output file already exists: {whole_out_string}")
+
+        if not needs_reevaluating(file, whole_out_string):
+            print("Found file that doesn't need evaluating... skipping!")
             continue
+        
+        #if os.path.exists(whole_out_string):
+        #    print(f"Skipping file {file}, since output file already exists: {whole_out_string}")
+        #    continue
         
     
         #Make the variables needed into a df:
