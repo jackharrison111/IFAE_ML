@@ -182,7 +182,7 @@ if __name__ == '__main__':
     first = args.First
     last = args.Last
 
-    check_reeval = False
+    check_reeval = True
     
     #even_load_dir = 'results/AllSigs/2Z_1b_AllSigs/Run_1515-21-04-2023'
     #odd_load_dir = 'results/AllSigs_Odd/2Z_1b_AllSigs/Run_1349-23-04-2023'
@@ -279,8 +279,8 @@ if __name__ == '__main__':
         
         print(f"Running file {file}. {i} / {len(all_root_files)}")
 
-        if '364250' not in file and '364288' not in file and '364289' not in file and '364290' not in file:
-            continue
+        #if '364250' not in file and '364288' not in file and '364289' not in file and '364290' not in file:
+        #    continue
         
         #Check if the file already exists and don't recreate otherwise
         if 'tmp' in file:
