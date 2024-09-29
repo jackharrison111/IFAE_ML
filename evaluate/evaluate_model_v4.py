@@ -8,7 +8,6 @@ from model.model_getter import get_model
 from utils._utils import load_yaml_config, find_root_files
 import torch
 import os 
-#from preprocessing.create_variables import VariableMaker
 import pickle
 
 #Temporarily ignore scikit learn warnings
@@ -19,6 +18,8 @@ warnings.filterwarnings('ignore')
 def needs_reevaluating(nom_filename, eval_filename):
 
     #If no file already
+    print("Nom file: ", nom_filename)
+    print("Eval file: ", eval_filename)
     if not os.path.exists(eval_filename):
         return True
 
@@ -47,6 +48,7 @@ def needs_reevaluating(nom_filename, eval_filename):
             key = key.split(';')[0]
         print("Found ", nom_f[key].num_entries, " entries in nom ", key," compared to: ", eval_f[key].num_entries)
         if nom_f[key].num_entries != eval_f[key].num_entries:
+            print("Found ", nom_f[key].num_entries, " entries in nom ", key," compared to: ", eval_f[key].num_entries)
             diff_flag = True
             #print("Found different entries in tree:", key)
 
@@ -118,6 +120,7 @@ def predict_model(model, arr_frame, scaler_path, training_vars, **kwargs):
 
         if len(default_indices) > 0:
             scores[batch_start:batch_end][default_indices] = -999
+            print("Setting ", len(default_indices), " to -999...")
         
         if len(non_default_indices) > 0:
             print(f"Found {len(non_default_indices)} interesting events.")
@@ -128,7 +131,6 @@ def predict_model(model, arr_frame, scaler_path, training_vars, **kwargs):
             _ = gc.collect()
         
     return scores
-
 
 def file_past_date(outfile):
 
@@ -205,9 +207,16 @@ if __name__ == '__main__':
     first = args.First
     last = args.Last
 
-    check_outdate = True  #Flag for checking if after September 1st
-    check_reeval = False  #Flag for checking if output trees are the same length or reeval
-    use_old_vm = True  #Flag to use 'working' evaluations
+    check_reeval = False
+    check_outdate = True
+    use_old_vm = True
+    
+    #even_load_dir = 'results/AllSigs/2Z_1b_AllSigs/Run_1515-21-04-2023'
+    #odd_load_dir = 'results/AllSigs_Odd/2Z_1b_AllSigs/Run_1349-23-04-2023'
+    #region = '2Z_1b'
+    #feather_conf = 'configs/feather_configs/10GeV/2Z_1b.yaml'
+    
+    
     
     #######################################################################################
     
@@ -288,11 +297,6 @@ if __name__ == '__main__':
     all_root_files = find_root_files(train_conf['ntuple_path'], '', [])
     #print(all_root_files, " =allfiles")
 
-    if use_old_vm:
-        from preprocessing.create_variables_old import VariableMaker
-    else:
-        from preprocessing.create_variables import VariableMaker
-    
     for i, file in enumerate(all_root_files):
         
         if i < first and first!=-1:
@@ -301,12 +305,12 @@ if __name__ == '__main__':
             break
         
         print(f"Running file {file}. {i} / {len(all_root_files)}")
-        
+
         #Check if the file already exists and don't recreate otherwise
         if 'tmp' in file:
             print("Skipping file as found tmp in path...")
             continue
-        
+
         save_path = file.split(os.path.basename(train_conf['ntuple_path']))[1]
         if save_path[0] == '/':
             save_path = save_path[1:]
@@ -314,154 +318,137 @@ if __name__ == '__main__':
         outdir = os.path.join(train_conf['ntuple_outpath'], region)
         whole_out_string = os.path.join(outdir, save_path)
 
-        #Check whether the file has been produced recently or not
         if check_outdate:
             if not file_past_date(whole_out_string):
                 print("Found file that was created before September 1st... Skipping!")
                 continue
+        
         if check_reeval:
             if not needs_reevaluating(file, whole_out_string):
                 print("Found file that doesn't need evaluating... skipping!")
                 continue
+
+        
         
         #if os.path.exists(whole_out_string):
         #    print(f"Skipping file {file}, since output file already exists: {whole_out_string}")
         #    continue
         
+        #outfile = os.path.join(ntuple_outdir,save_path)
     
         #Make the variables needed into a df:
+        if use_old_vm:
+            from preprocessing.create_variables_old import VariableMaker
+        else:
+            from preprocessing.create_variables import VariableMaker
         vm = VariableMaker()
         variables = vm.varcols
         train_vars = [v for v in train_conf['training_variables'] if v not in ['eventNumber', 'weight', 'sample', 'index']]
         
-        non_produced = list(set(train_vars).difference(set(vm.created_cols)))
-        
-        func_strings = fm.master_config[fm.master_config['variable_functions_choice']]
-        funcs = [getattr(vm, s) for s in func_strings]
-        
-        
-        #Get all trees
+        #Load all the data 
         try:
-            with uproot.open(file) as f:
-                trees = f.keys()
-            trees = [t[:-2] for t in trees]
+            print("Opening nominal...")
+            f = uproot.open(file + ':nominal',library="pd")
+            print("Opened file.")
+            if len(f.keys()) == 0:
+                print(f"WARNING:: Found no events in file: {file}.")
+                continue
         except:
-            print("Couldn't open file: ", file, " - Skipping...")
+            print(f"Found bad file, and cannot open:  {file}.")
             continue
         
-        #Loop over each tree
-        for j,tree in enumerate(trees):
+        #Get the variables that we need
+        #Only load the variables needed for the variable maker, plus the others needed in the train_vars
+        #that aren't produced
         
-            print(f"Running tree {tree}. {j} / {len(trees)}")
+        #Here check for variables in the keys
+        ntuple_variables = list(f.keys())
         
-            try:
-                f = uproot.open(file + f":{tree}",library="pd")
 
-                if len(f.keys()) == 0:
-                    print(f"WARNING:: Found no events in tree: {tree}.")
-                    
-                    #TODO: Should write empty tree here
-                    continue
-            except:
-                print(f"Found bad file/tree, and cannot open:  {file}/{tree}.")
-                continue
-        
-            #Get the variables that we need
-            #Only load the variables needed for the variable maker, plus the others needed in the train_vars
-            #that aren't produced
-
-            all_data = f.arrays(list(set(variables+non_produced)),library="pd")
-            events = f.arrays(["eventNumber"],library="np")
-
-            print("\n--- Memory usage: ---")
-            all_data.info(verbose = False, memory_usage = 'deep')
-            print("---------------------\n")
-
-            for i, f in enumerate(funcs):
-                all_data = f(all_data)
-                print(f"Done function {i}.") #Add timing
-
+        non_produced = list(set(train_vars).difference(set(vm.created_cols)))
+        final_variables = list(set(variables+non_produced))
+        removed_MtLepMet_flag = False
+        removed_M4l_flag = False
+        if 'MtLepMet' not in ntuple_variables:
+            #Remove them from reading by uproot and make them instead
+            if 'MtLepMet' in final_variables:
+                final_variables.remove('MtLepMet')
+                removed_MtLepMet_flag = True
             
-
-            print("Total size of events: " , len(all_data))
-
-            if odd_config['model_type'] == 'NF':
-                #Check whether any of the input variables are default, and then return a default value for the model
-                even_scores = predict_model(even_model, all_data.loc[all_data['eventNumber'] % 2 == 0],
-                                           scaler_path = even_load_dir, training_vars=train_vars, 
-                                            min_loss=min_all, max_loss=max_all)
-                odd_scores = predict_model(odd_model, all_data.loc[all_data['eventNumber'] % 2 == 1],
-                                          scaler_path = odd_load_dir, training_vars=train_vars,
-                                          min_loss=min_all, max_loss=max_all)
-            else:
-                #Check whether any of the input variables are default, and then return a default value for the model
-                even_scores = predict_model(even_model, all_data.loc[all_data['eventNumber'] % 2 == 0],
-                                           scaler_path = even_load_dir, training_vars=train_vars)
-                odd_scores = predict_model(odd_model, all_data.loc[all_data['eventNumber'] % 2 == 1],
-                                          scaler_path = odd_load_dir, training_vars=train_vars)
-
-
-            all_scores = np.empty([events["eventNumber"].size,1])
-            all_scores[events["eventNumber"]%2==0] = even_scores
-            all_scores[events["eventNumber"]%2==1] = odd_scores
-
-
-
-            events[SCORE_NAME] = all_scores.reshape(-1)
-
-            ######################################
-            # Add unscaled output variables here #
-            ######################################
-
-            for col in train_vars:
-                events[f"{col}_{region}_{train_conf['model_type']}"] = all_data[col]
-
-
-            outdir = os.path.join(train_conf['ntuple_outpath'], region)
-
-
-            whole_out_string = os.path.join(outdir, save_path)
-            print("Saving to: ", whole_out_string)
-
-            print("Got base path: ", os.path.split(whole_out_string)[0])
-            if not os.path.exists(os.path.split(whole_out_string)[0]):
-                os.makedirs(os.path.split(whole_out_string)[0])
-                
-            #WRITE THEM ALL INTO SEPARATE FILES AND THEN JUST HADD THEM AFTER
-            #Replace .root with tree.root
-            out_string_with_tree = whole_out_string.replace('.root', f"_TREE_{tree}.root")
-
-            print("Saving tree to: ", out_string_with_tree)
-            with uproot.recreate(out_string_with_tree) as rootfile:
-                rootfile[tree]=events
-                gc.collect()
-                
-            '''    
-            #Check if the first tree to be written instead of checking if it already exists
-            #if os.path.exists(whole_out_string):
-            if j != 0:
-                
-                #IF THIS FAILS, MAKE A NEW FILE AND HADD IT
-                
-                with uproot.update(whole_out_string) as rootfile:
-                    rootfile[tree] = events
-                    gc.collect()
-            else:
-                with uproot.recreate(whole_out_string) as rootfile:
-                    rootfile[tree]=events
-                    gc.collect()
-            '''
-            print(f"Done tree {tree}...")
-
-            if tree == trees[-1]:
-                #Hadd all the trees
-                all_tree_files = whole_out_string.replace('.root', '_TREE_*.root')
-
-                #hadd -f targetfile source1 source2 ...
-                print("Hadd-ing all trees to: ",whole_out_string)
-                #print(f"hadd -f {whole_out_string} {all_tree_files}")
-                os.system(f"hadd -f {whole_out_string} {all_tree_files}")
-                os.system(f"rm {all_tree_files}")
+        if 'Mllll0123' not in ntuple_variables:
+            if 'Mllll0123' in final_variables:
+                final_variables.remove('Mllll0123')
+                removed_M4l_flag = True
+         
+        
+        all_data = f.arrays(final_variables,library="pd")
+        events = f.arrays(["eventNumber"],library="np")
+        
+        
+        func_strings = fm.master_config[fm.master_config['variable_functions_choice']]
+        
+        
+        if removed_MtLepMet_flag == True and 'MtLepMet' in train_vars:
+            #func_strings.append('get_MTLepMet')
+            func_strings = ['get_MTLepMet']+func_strings
+        if removed_M4l_flag == True and 'Mllll0123' in train_vars:
+            #func_strings.append('calc_m4l')
+            func_strings = ['calc_m4l']+func_strings
+            
+        funcs = [getattr(vm, s) for s in func_strings]
+        
+        for i, f in enumerate(funcs):
+            print(f"Running function {func_strings[i]}.")
+            all_data = f(all_data)
+            print(f"Done function {func_strings[i]}.") #Add timing
+    
+        print("Total size of events: " , len(all_data))
+        
+        
+        if odd_config['model_type'] == 'NF':
+            #Check whether any of the input variables are default, and then return a default value for the model
+            even_scores = predict_model(even_model, all_data.loc[all_data['eventNumber'] % 2 == 0],
+                                       scaler_path = even_load_dir, training_vars=train_vars, 
+                                        min_loss=min_all, max_loss=max_all)
+            odd_scores = predict_model(odd_model, all_data.loc[all_data['eventNumber'] % 2 == 1],
+                                      scaler_path = odd_load_dir, training_vars=train_vars,
+                                      min_loss=min_all, max_loss=max_all)
+        else:
+            #Check whether any of the input variables are default, and then return a default value for the model
+            even_scores = predict_model(even_model, all_data.loc[all_data['eventNumber'] % 2 == 0],
+                                       scaler_path = even_load_dir, training_vars=train_vars)
+            odd_scores = predict_model(odd_model, all_data.loc[all_data['eventNumber'] % 2 == 1],
+                                      scaler_path = odd_load_dir, training_vars=train_vars)
+        
+        
+        all_scores = np.empty([events["eventNumber"].size,1])
+        all_scores[events["eventNumber"]%2==0] = even_scores
+        all_scores[events["eventNumber"]%2==1] = odd_scores
+        
+        
+        
+        events[SCORE_NAME] = all_scores.reshape(-1)
+        
+        ######################################
+        # Add unscaled output variables here #
+        ######################################
+        
+        for col in train_vars:
+            events[f"{col}_{region}_{train_conf['model_type']}"] = all_data[col]
+            
+        
+        
+        print("Saving to: ", whole_out_string)
+        
+        print("Got base path: ", os.path.split(whole_out_string)[0])
+        if not os.path.exists(os.path.split(whole_out_string)[0]):
+            os.makedirs(os.path.split(whole_out_string)[0])
+            
+        #Need to join this with an output directory
+        with uproot.recreate(whole_out_string) as rootfile:
+            rootfile["nominal"]=events
+            gc.collect()
+            
             
     print("Finished running over all requested files.")
     

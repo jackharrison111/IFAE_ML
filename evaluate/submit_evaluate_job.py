@@ -27,20 +27,20 @@ if __name__ == '__main__':
     
     os.chdir("/nfs/pic.es/user/j/jharriso/IFAE_ML")
 
-    SYSTS = False
+    SYSTS = True
     Q2 = True
     eval_DD = False
     
-    job_name = "OldReeval_Nom_v3"
-    job_prefix = "Nom"
+    job_name = "OldReeval_Sys1_v2"
+    job_prefix = "Sys1"
     
-    split_amount = 100
+    split_amount = 50
     total_files = -1
     
 
-    #Set to false otherwise:
-    ntuplePathIn = "/data/at3/common/multilepton/FinalSystProduction/nominal"
-    ntuplePathOut  = "/data/at3/common/multilepton/FinalSystProduction/evaluations/nominal"
+    #Change here to set folder to read from
+    ntuplePathIn = "/data/at3/common/multilepton/FinalSystProduction/Sys1"
+    ntuplePathOut  = "/data/at3/common/multilepton/FinalSystProduction/evaluations/Sys1"
     
     #ntuplePathIn = "/data/at3/common/separi/nominal"
     #ntuplePathOut  = "/data/at3/common/multilepton/VLLemu/evaluations/nominal"
