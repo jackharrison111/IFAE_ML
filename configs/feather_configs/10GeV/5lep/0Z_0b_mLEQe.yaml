@@ -7,8 +7,8 @@ use_default: True
 variables_file : 'Bkg_variables.txt'
 samples_file : 'Bkg_samples.txt'
 json_output : 'Bkg_samples.json'
-nominal_path : "/data/at3/scratch3/multilepton/VLL_production/nominal"
-feather_path : "/data/at3/scratch3/multilepton/VLL_production/feather/5lep"
+nominal_path : "/data/at3/common/multilepton/FinalSystProduction/nominal"
+feather_path : "/data/at3/common/multilepton/FinalSystProduction/feather/Regions"
 
 #Data configs:
 #variables_file : 'configs/Data_variables.txt'

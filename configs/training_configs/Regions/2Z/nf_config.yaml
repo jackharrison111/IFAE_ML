@@ -1,22 +1,27 @@
 
 #Metadata
+#TODO: put your region name here
 Region_name: '2Z_0b'
 out_folder: '2Z_0b_NFs'
 
 
 #Samples
+#TODO: point this to your path
 samples_path: '/data/at3/common/multilepton/VLL_production/feather/4lepQ0'
 feather_file : '2Z.ftr'
 signal_file: '2Z_Sigs.ftr'
 
 
 #Evaluating to ntuple
+#Not needed
 ntuple_path: '/data/at3/common/multilepton/VLL_production/nominal'
 ntuple_outpath: '/data/at3/common/multilepton/VLL_production/evaluations'
 
+#Not needed
 #Outputting to ntuple
 add_to_ntuple: False
 
+#Think not needed
 base_dir: '/data/at3/scratch3/jharrison/nominal/'
 out_dir: '/data/at3/scratch3/jharrison/mod_ntuples_newvars/'
 vll_base_dir: '/data/at3/scratch3/jharrison/VLL'
@@ -24,6 +29,7 @@ vll_out_dir: '/data/at3/scratch3/jharrison/mod_VLL'
 
 
 #Set training hyperparameters
+#All these you can keep for now
 Train : True
 train_size: -1
 batch_size : 1024
@@ -35,10 +41,12 @@ test_dump : False
 use_eventnumber: True
 even_or_odd : 'Even'
 beta: 1
+#Not needed
 load_path : 'outputs/VAE_1943-16-08-2022/model_state_dict.pt'
 
 
 #Preprocessing settings
+#This will need to change, will need to write your own weight function
 mc_weight_choice: 'VLL_production'
 remove_zero_weights : True
 remove_negative_weights : False
@@ -46,6 +54,7 @@ weight_loss : True
 added_weight_factor : 1
 
 #Model setup
+#TODO: Keep the same
 model_type : 'NF'
 hidden_depth: 2
 num_layers: 8
@@ -63,6 +72,7 @@ evaluate_signals : True
 
 
 #Set training variables
+#TODO: Set what training variables you want
 training_variables:     ['met_met',
     'Mllll0123',
     'HT_lep',
@@ -85,7 +95,7 @@ training_variables:     ['met_met',
     'index'
 ]
 
- 
+#TODO: Set the samples we need, can keep the same for now
 #Set the samples used
 chosen_samples : [
     'singleTopschan',

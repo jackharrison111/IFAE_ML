@@ -251,26 +251,31 @@ if __name__ == '__main__':
 
     #base_dir = '/data/at3/scratch2/multilepton/VLL_production/feather/4lepQ0'
     base_dir = '/data/at3/common/multilepton/FinalSystProduction/feather/Regions'
+
+    base_dir = "/data/at3/common/multilepton/FinalSystProduction/feather/Final"
+    
     read_from_feather = True
     apply_conv_veto = True
 
     run_file = 'evaluate/region_settings/nf_NewYields.yaml'
     #run_file = 'evaluate/region_settings/nf_Q2.yaml'
-    output_folder = 'binning/outputs/ModelDep_ConvVeto_Q0'
+    output_folder = 'binning/outputs/ModelDep_ConvVeto_Q0_FinalTest'
 
     run_region = [
-        #'0Z_0b_0SFOS',
+        '0Z_0b_0SFOS',
         #'0Z_0b_1SFOS',
         #'0Z_0b_2SFOS',
         #'1Z_0b_1SFOS',
         #'1Z_0b_2SFOS',
-        #'2Z_0b',
+        '2Z_0b',
         #'0Z_1b_0SFOS',
         #'0Z_1b_1SFOS',
         #'0Z_1b_2SFOS',
-        '1Z_1b_1SFOS',
+        #'1Z_1b_1SFOS',
         #'1Z_1b_2SFOS',
-        '2Z_1b'
+        #'2Z_1b',
+        #'Q2_0b',
+        #'Q2_1b',
     ]
     
     '''
@@ -292,11 +297,9 @@ if __name__ == '__main__':
        #'0Z_1b_1SFOS' : ['0Z_1b_1SFOS_EgtM', '0Z_1b_1SFOS_MgtE'],
        #'0Z_1b_2SFOS' : ['0Z_1b_2SFOS_EgtM', '0Z_1b_2SFOS_EeqM', '0Z_1b_2SFOS_MgtE'],
        #'1Z_1b_2SFOS' : ['1Z_1b_2SFOS_EgtM', '1Z_1b_2SFOS_MgtE'],
-        #'Q2_0b' : ['Q2_0b_e', 'Q2_0b_eu', 'Q2_0b_u'],
-        #'Q2_1b' : ['Q2_1b_e','Q2_1b_eu', 'Q2_1b_u'],
+       #'Q2_0b' : ['Q2_0b_EgtM', 'Q2_0b_EeqM', 'Q2_0b_MgtE'],
+       #'Q2_1b' : ['Q2_1b_EgtM','Q2_1b_EeqM', 'Q2_1b_MgtE'],
     }
-
-    
 
     
     make_plots = True
@@ -375,6 +378,9 @@ if __name__ == '__main__':
         such that the OR of each region is taken, and only one binning
         is produced that allows all 3 to have <20% stat.error in the 
         last bin and increase each bin by SF. 
+
+        Surely that we want to use the one with the most sensitive bin as the one to 
+        increase the yield from...
         #########################
         '''
         #Instead of looping over them individually we just check if the first item is the same
@@ -470,6 +476,18 @@ if __name__ == '__main__':
                         sub_r_data['Bkg'] = merged_data.loc[(merged_data['quadlep_type'] == 1)|((merged_data['Ztype'] == 'E')&(merged_data['quadlep_type'] == 3))]
                         #sub_r_data['Sig'] = merged_sig_data.loc[(merged_sig_data['quadlep_type'] == 1)|((merged_sig_data['Ztype'] == 'E')&(merged_sig_data['quadlep_type'] == 3))]
                     
+
+                elif 'Q2' in sub_region:
+
+                    if 'EgtM' in sub_region:
+                        sub_r_data['Bkg'] = merged_data.loc[merged_data['quadlep_type'].isin([4,5])]
+                    elif 'MgtE' in sub_region:
+                        sub_r_data['Bkg'] = merged_data.loc[merged_data['quadlep_type'].isin([1,2])]
+                    elif 'EeqM' in sub_region:
+                        sub_r_data['Bkg'] = merged_data.loc[merged_data['quadlep_type'].isin([3])]
+                    
+                sub_r_data['Bkg']['Scores'] = np.clip(sub_r_data['Bkg']['Scores'], a_min=0,a_max=1)
+                
                 binnings, bin_yields =  run_modeldep_alg(sub_r_data['Bkg']['Scores'], sub_r_data['Bkg']['Weights'])
 
                 sub_r_data['Binning'] = binnings
@@ -490,7 +508,7 @@ if __name__ == '__main__':
                     f.writelines([bin_str, yield_str])
 
                 plt.figure()
-                counts, edges, _ = plt.hist(sub_r_data['Bkg']['Scores'], 
+                counts, edges, _ = plt.hist(np.clip(sub_r_data['Bkg']['Scores'],a_min=0,a_max=1), 
                                             bins=binnings, 
                                             weights=sub_r_data['Bkg']['Weights'], alpha=0.8)
                 plt.ylabel('Counts', fontsize=fs)

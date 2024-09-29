@@ -149,7 +149,7 @@ if __name__ == '__main__':
         '2Z_1b'
     ]
     
-    '''
+    
     run_region = [
         'Q2_0b_e',
         'Q2_0b_eu',
@@ -158,14 +158,14 @@ if __name__ == '__main__':
         'Q2_1b_eu',
         'Q2_1b_u',
     ]
-    '''
+    
 
     
     #run_region = ['Q2_0b_e']
     
     #run_file = 'evaluate/region_settings/nf_NewYields.yaml'
     run_file = 'evaluate/region_settings/nf_Q2.yaml'
-    output_folder = 'binning/outputs/Q2'
+    output_folder = 'binning/outputs/ModelDepQ2'
     
     make_plots = True
     
@@ -351,6 +351,8 @@ if __name__ == '__main__':
                 
                 all_scores = region_scores
                 all_weights = region_weights
+                
+                all_weights = np.abs(all_weights)
                 
                 all_sigs = region_sigs
                 all_sig_w = region_sig_w

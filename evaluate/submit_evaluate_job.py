@@ -31,10 +31,10 @@ if __name__ == '__main__':
     Q2 = True
     eval_DD = False
     
-    job_name = "FinalEval_Nom"
+    job_name = "OldReeval_Nom_v3"
     job_prefix = "Nom"
     
-    split_amount = 50
+    split_amount = 100
     total_files = -1
     
 
@@ -140,7 +140,8 @@ if __name__ == '__main__':
                 
 
                 #conf_file = f"configs/training_configs/Regions/{region}/training_config.yaml"
-                func = f"python evaluate/evaluate_model_v3.py -r {region} -e {even_path} -o {odd_path} --First {s} --Last {i} -f {feather_conf} -ni {ntuplePathIn} -no {ntuplePathOut}"
+                #func = f"python evaluate/evaluate_model_v3.py -r {region} -e {even_path} -o {odd_path} --First {s} --Last {i} -f {feather_conf} -ni {ntuplePathIn} -no {ntuplePathOut}"
+                func = f"python evaluate/evaluate_model_v4.py -r {region} -e {even_path} -o {odd_path} --First {s} --Last {i} -f {feather_conf} -ni {ntuplePathIn} -no {ntuplePathOut}"
                 
                 
                
@@ -181,7 +182,9 @@ if __name__ == '__main__':
 
             #conf_file = f"configs/training_configs/Regions/{region}/training_config.yaml"
             #func = f"python evaluate/evaluate_model.py -r {region} -e {even_path} -o {odd_path}"
-            func = f"python evaluate/evaluate_model_v3.py -r {region} -e {even_path} -o {odd_path} -f {feather_conf} -ni {ntuplePathIn} -no {ntuplePathOut}"
+            #func = f"python evaluate/evaluate_model_v3.py -r {region} -e {even_path} -o {odd_path} -f {feather_conf} -ni {ntuplePathIn} -no {ntuplePathOut}"
+
+            func = f"python evaluate/evaluate_model_v4.py -r {region} -e {even_path} -o {odd_path} -f {feather_conf} -ni {ntuplePathIn} -no {ntuplePathOut}"
             
             #os.system(func)
             

@@ -23,7 +23,7 @@ if __name__ == '__main__':
     #If total_files = -1, get all the files in the folder?
 
     
-    split_amount = 25
+    split_amount = 10
     memory = 16
     SYSTEMATICS = False
     
@@ -38,7 +38,7 @@ if __name__ == '__main__':
     os.chdir("/nfs/pic.es/user/j/jharriso/IFAE_ML")
 
     
-    job_name = "CombineNom_2009"
+    job_name = "CombineNom_2809"
     
     
     #base_dir = '/data/at3/common/multilepton/VLL_production/evaluations'

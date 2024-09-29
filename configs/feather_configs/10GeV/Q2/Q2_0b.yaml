@@ -7,8 +7,8 @@ use_default: True  #Means it doesnt look for files in region folder
 variables_file : 'Bkg_variables.txt'
 samples_file : 'Bkg_samples.txt'
 json_output : 'Bkg_samples.json'
-nominal_path : "/data/at3/scratch3/multilepton/VLL_production/nominal"
-feather_path : "/data/at3/scratch3/multilepton/VLL_production/feather"
+nominal_path : "/data/at3/common/multilepton/FinalSystProduction/nominal"
+feather_path : "/data/at3/common/multilepton/FinalSystProduction/feather/Regions"
 
 #Data configs:
 #variables_file : 'configs/Data_variables.txt'
@@ -42,7 +42,7 @@ variable_functions_choice: 'Q2_funcs'
 Q2_funcs: ['get_Qblind_pairs', 'calc_4lep_pTll', 'calc_m3l', 'make_jets_continuous', 'get_MTLepLepMET']
 
 
-cut_0b: '(custTrigMatch_LooseID_FCLooseIso_DLT) & (quadlep_type>0) & (abs(total_charge)==2)& (nTaus_OR==0) & (lep_Pt_0*1e-3>10) & (lep_Pt_1*1e-3>10) & (lep_Pt_2*1e-3>10) & (lep_Pt_3*1e-3>10) & (nJets_OR_DL1r_77==0) & (lep_isolationFCLoose_0) & (lep_isolationFCLoose_1) & (lep_isolationFCLoose_2) & (lep_isolationFCLoose_3) & ( (((abs(lep_ID_0)==11)&(lep_chargeIDBDTLoose_0))|(abs(lep_ID_0)!=11))&(((abs(lep_ID_1)==11)&(lep_chargeIDBDTLoose_1))|(abs(lep_ID_1)!=11))&(((abs(lep_ID_2)==11)&(lep_chargeIDBDTLoose_2))|(abs(lep_ID_2)!=11))&(((abs(lep_ID_3)==11)&(lep_chargeIDBDTLoose_3))|(abs(lep_ID_3)!=11)) )'
+cut_0b: '(custTrigMatch_LooseID_FCLooseIso_DLT) & (quadlep_type>0) & (abs(total_charge)==2)& (nTaus_OR==0) & (lep_Pt_0*1e-3>10) & (lep_Pt_1*1e-3>10) & (lep_Pt_2*1e-3>10) & (lep_Pt_3*1e-3>10) & (nJets_OR_DL1r_77==0) & ( (((abs(lep_ID_0)==11)&(lep_chargeIDBDTLoose_0))|(abs(lep_ID_0)!=11))&(((abs(lep_ID_1)==11)&(lep_chargeIDBDTLoose_1))|(abs(lep_ID_1)!=11))&(((abs(lep_ID_2)==11)&(lep_chargeIDBDTLoose_2))|(abs(lep_ID_2)!=11))&(((abs(lep_ID_3)==11)&(lep_chargeIDBDTLoose_3))|(abs(lep_ID_3)!=11)) )'
 
 
 

@@ -8,7 +8,6 @@ from model.model_getter import get_model
 from utils._utils import load_yaml_config, find_root_files
 import torch
 import os 
-from preprocessing.create_variables import VariableMaker
 import pickle
 
 #Temporarily ignore scikit learn warnings
@@ -183,6 +182,7 @@ if __name__ == '__main__':
     last = args.Last
 
     check_reeval = True
+    use_old_vm = True
     
     #even_load_dir = 'results/AllSigs/2Z_1b_AllSigs/Run_1515-21-04-2023'
     #odd_load_dir = 'results/AllSigs_Odd/2Z_1b_AllSigs/Run_1349-23-04-2023'
@@ -279,9 +279,12 @@ if __name__ == '__main__':
         
         print(f"Running file {file}. {i} / {len(all_root_files)}")
 
-        #if '364250' not in file and '364288' not in file and '364289' not in file and '364290' not in file:
-        #    continue
-        
+        '''
+        if '364250' not in file: #and '364288' not in file and '364289' not in file and '364290' not in file:
+            continue
+        if 'mc16d' not in file:
+            continue
+        ''' 
         #Check if the file already exists and don't recreate otherwise
         if 'tmp' in file:
             print("Skipping file as found tmp in path...")
@@ -306,6 +309,10 @@ if __name__ == '__main__':
         #outfile = os.path.join(ntuple_outdir,save_path)
     
         #Make the variables needed into a df:
+        if use_old_vm:
+            from preprocessing.create_variables_old import VariableMaker
+        else:
+            from preprocessing.create_variables import VariableMaker
         vm = VariableMaker()
         variables = vm.varcols
         train_vars = [v for v in train_conf['training_variables'] if v not in ['eventNumber', 'weight', 'sample', 'index']]
@@ -363,6 +370,7 @@ if __name__ == '__main__':
         funcs = [getattr(vm, s) for s in func_strings]
         
         for i, f in enumerate(funcs):
+            print(f"Running function {func_strings[i]}.")
             all_data = f(all_data)
             print(f"Done function {func_strings[i]}.") #Add timing
     

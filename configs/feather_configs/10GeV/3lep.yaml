@@ -7,8 +7,8 @@ use_default: True
 variables_file : 'Bkg_variables.txt'
 samples_file : 'Bkg_samples.txt'
 json_output : 'Bkg_samples.json'
-nominal_path : "/data/at3/common/multilepton/VLL_production/nominal"
-feather_path : "/data/at3/common/multilepton/VLL_production/feather/3lep"
+nominal_path : "/data/at3/common/multilepton/FinalSystProduction/nominal"
+feather_path : "/data/at3/common/multilepton/FinalSystProduction/feather/Regions"
 
 #Data configs:
 #variables_file : 'configs/Data_variables.txt'
@@ -32,7 +32,7 @@ cut_choice : 'cut_3lep'
 variable_functions_choice: 'no_funcs'
 
 
-cut_3lep: '(custTrigMatch_LooseID_FCLooseIso_SLT) & (trilep_type>0) & (lep_isolationFCLoose_0) & (lep_isolationFCLoose_1) & (lep_isolationFCLoose_2) & (lep_Pt_0*1e-3>10) & (lep_Pt_1*1e-3>10) & (lep_Pt_2*1e-3>10)'
+cut_3lep: '(custTrigMatch_LooseID_FCLooseIso_SLT) & (trilep_type>0) & (lep_Pt_0*1e-3>10) & (lep_Pt_1*1e-3>10) & (lep_Pt_2*1e-3>10)'
 no_funcs: []
 
 

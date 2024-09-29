@@ -45,8 +45,8 @@ def needs_reevaluating(nom_filename, eval_filename):
     for key in nom_keys:
         if ";" in key:
             key = key.split(';')[0]
+        print("Found ", nom_f[key].num_entries, " entries in nom ", key," compared to: ", eval_f[key].num_entries)
         if nom_f[key].num_entries != eval_f[key].num_entries:
-            print("Found ", nom_f[key].num_entries, " entries in nom ", key," compared to: ", eval_f[key].num_entries)
             diff_flag = True
             #print("Found different entries in tree:", key)
 

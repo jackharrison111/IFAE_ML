@@ -195,7 +195,7 @@ def get_data_from_feather(feather_file, r_config, region,
 
     #################################################################################################################
     print("Selecting samples...")
-    #USE WITH ATANAY'S NEW FEATHERS
+    #USE WITH ATANAY'
     chosen_samples = [
         'ZZ', 'ggZZ', 'ZZlow',
         'WZ', 'ggWZ', 'WZlow',

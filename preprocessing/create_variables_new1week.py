@@ -71,21 +71,9 @@ class VariableMaker():
         other_mZlls = []
         
         for i in range(len(df)):
-            #best_pair = -999
-            #best_mass = -999
             
-            #df.loc[i, 'best_Zllpair'] = -999
-            #df.loc[i, 'best_mZll'] = -999
-            #df.loc[i, 'other_Zllpair'] = -999
-            #df.loc[i, 'other_mZll'] = -999
-
             best_pair = "-999"
-            #df.loc[i, 'best_Zllpair'] = "-999"
-            #df.loc[i, 'other_Zllpair'] = "-999"
-
             best_mass = -999
-            #df.loc[i, 'best_mZll'] = -999
-            #df.loc[i, 'other_mZll'] = -999
             
             #Check that there are 4 leptons
             if df.loc[i, 'quadlep_type'] < 1:
@@ -93,8 +81,8 @@ class VariableMaker():
                 best_mZlls.append(best_mass)
                 other_Zllpairs.append("-999")
                 other_mZlls.append(-999)
-                #print(type(df.loc[i, 'quadlep_type']), df.loc[i,'quadlep_type'])
                 continue
+                
             if df.loc[i,'quadlep_type'] in [2,4]:
                 best_Zllpairs.append(best_pair)
                 best_mZlls.append(best_mass)

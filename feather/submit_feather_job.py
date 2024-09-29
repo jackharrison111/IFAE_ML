@@ -12,15 +12,16 @@ if __name__ == '__main__':
     
     os.chdir("/nfs/pic.es/user/j/jharriso/IFAE_ML")
 
-    job_name = "0Z_0b_Rerun"
+    job_name = "RefreshAllFeathersQ2"
     #outputDir = '/data/at3/common/multilepton/VLL_production/multifake_feathers/feather/5lep'
     #outputDir = '/data/at3/common/multilepton/VLL_production/multifake_feathers/Remade'
     #outputDir = '/data/at3/common/multilepton/FinalSystProduction/feather/OldCuts'
-    outputDir = None
+    outputDir = '/data/at3/common/multilepton/FinalSystProduction/feather/Final'
+    
     SIGNALS = False
     SUSY = False
     FIVELEP = False
-    Q2 = False
+    Q2 = True
     OLD_PROD = False
     
     regions = []
@@ -36,7 +37,7 @@ if __name__ == '__main__':
         #regions += ['2LSS', '3lep']
 
         #CHANGE HERE
-        regions = ['0Z_0b_2SFOS']
+        #regions = ['0Z_0b_2SFOS']
         
         
     if Q2:

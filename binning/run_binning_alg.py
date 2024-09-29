@@ -38,10 +38,10 @@ if __name__ == '__main__':
     read_from_feather = True
     feather_path = "/data/at3/common/multilepton/FinalSystProduction/feather/Regions"
     
-    feather_path = "/data/at3/common/multilepton/FinalSystProduction/feather/4lepQ0"
+    feather_path = "/data/at3/common/multilepton/FinalSystProduction/feather/Final"
     
-    trainrun_file = 'evaluate/region_settings/nf_NewYields.yaml'
-    #trainrun_file = 'evaluate/region_settings/nf_Q2.yaml'
+    #trainrun_file = 'evaluate/region_settings/nf_NewYields.yaml'
+    trainrun_file = 'evaluate/region_settings/nf_Q2.yaml'
     #output_folder = 'binning/outputs/modelIndepQ2'
     output_folder = 'binning/outputs/ModelIndepQ0_Prod3_ConvVetoCut_NewFeather'
     make_plots = True
@@ -53,17 +53,17 @@ if __name__ == '__main__':
         r_config = yaml.safe_load(f)
 
     chosen_regions = [
-        '0Z_0b_0SFOS',
-        '0Z_0b_1SFOS',
-        '0Z_0b_2SFOS',
-        '1Z_0b_1SFOS',
-        '1Z_0b_2SFOS',
-        '2Z_0b'
+        #'0Z_0b_0SFOS',
+        #'0Z_0b_1SFOS',
+        #'0Z_0b_2SFOS',
+        #'1Z_0b_1SFOS',
+        #'1Z_0b_2SFOS',
+        #'2Z_0b'
         ]
     
-    #chosen_regions  = [
-    #    'Q2_0b_e'
-    #]
+    chosen_regions  = [
+        'Q2_0b'
+    ]
     
     
     region_names ={
@@ -88,7 +88,7 @@ if __name__ == '__main__':
         # Change get dataset to get the run 3 scores from feathers
         if read_from_feather:
             region_file = region+ "_10GeV.ftr"
-            region_file = region + "_10GeV_new.ftr"
+            #region_file = region + "_10GeV_new.ftr"
             
             dataset = get_data_from_feather(os.path.join(feather_path,region_file), r_config, region,
                                             apply_conv_veto=apply_conv_veto)
@@ -110,7 +110,7 @@ if __name__ == '__main__':
         if read_from_feather:
             region_file = region_1b + "_10GeV.ftr"
 
-            region_file = region_1b + "_10GeV_new.ftr"
+            #region_file = region_1b + "_10GeV_new.ftr"
             
             dataset_1b = get_data_from_feather(os.path.join(feather_path,region_file), r_config, region_1b,
                                               apply_conv_veto=apply_conv_veto)

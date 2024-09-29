@@ -21,12 +21,15 @@ import os
 import gc
 import tracemalloc
 
-def merge_files(file_list, merge_col='eventNumber'):
+# For the systematics, merge each one individually and then HADD the results?
+
+
+def merge_files(file_list, tree, merge_col='eventNumber'):
     
     start = time.perf_counter()
     tracemalloc.start()
     
-    with uproot.open(file_list[0]+':nominal') as f:
+    with uproot.open(file_list[0]+f":{tree}") as f:
         events = f.arrays(library="pd")
         
     l1 = time.perf_counter()
@@ -36,7 +39,7 @@ def merge_files(file_list, merge_col='eventNumber'):
         print(f"Merging region {i} / {len(file_list[1:])}")
         lap2 = time.perf_counter()
         
-        with uproot.open(file+':nominal') as f:
+        with uproot.open(file+f":{tree}") as f:
             new_events = f.arrays(library="pd")
             lap3 = time.perf_counter()
             print(f"--- Retrieved events in {round(lap3-lap2,2)}s.")
@@ -51,9 +54,9 @@ def merge_files(file_list, merge_col='eventNumber'):
             )
             lap4 = time.perf_counter()
             print(f"--- Merged events in {round(lap4-lap3,2)}s.")
-            print("\n--- Memory usage: ---")
-            events.info(verbose = False, memory_usage = 'deep')
-            print("---------------------\n")
+            #print("\n--- Memory usage: ---")
+            #events.info(verbose = False, memory_usage = 'deep')
+            #print("---------------------\n")
             print(f"Time for region: {round(lap4-lap2,2)}s.")
         
     print(f"Finished loop. Total time: {round(lap4-start,2)}s.")
@@ -67,6 +70,7 @@ def needs_reevaluating(nom_filename, eval_filename):
 
     #If no file already
     if not os.path.exists(eval_filename):
+        print("Not found eval file, evaluating!")
         return True
 
     #If file
@@ -92,7 +96,6 @@ def needs_reevaluating(nom_filename, eval_filename):
     for key in nom_keys:
         if ";" in key:
             key = key.split(';')[0]
-        print("Found ", nom_f[key].num_entries, " entries in nom ", key," compared to: ", eval_f[key].num_entries)
         if nom_f[key].num_entries != eval_f[key].num_entries:
             diff_flag = True
             print("Found different entries in tree:", key)
@@ -111,6 +114,7 @@ if __name__ == "__main__" :
     parser = argparse.ArgumentParser(description = "Script to merge nominals into one.")
     parser.add_argument("-d", "--directory",help = "Root directory to look for files",required = False)
     parser.add_argument("-o", "--outDir",help = "Out directory to add files to",required = False)
+    parser.add_argument("-r", "--rootDir",help = "Actual input directory to look for files",required = False)
     parser.add_argument("-first","--First",action="store", help="Set the first file to run over", 
                         default=-1, required=False, type=int)
     parser.add_argument("-last","--Last",action="store", help="Set the last file to run over", 
@@ -119,6 +123,7 @@ if __name__ == "__main__" :
     
     base_dir = args.directory
     out_dir = args.outDir
+    root_dir = args.rootDir
     first = args.First
     last = args.Last
     
@@ -151,18 +156,15 @@ if __name__ == "__main__" :
     
     from utils._utils import find_root_files
     
-    base_check = os.path.join(base_dir,region_folders[0])
-    #ntuplePathIn = '/data/at3/common/multilepton/SystProduction/nominal'
-    ntuplePathIn = '/data/at3/common/multilepton/FinalSystProduction/nominal'
+
+    #ntuplePathIn = '/data/at3/common/multilepton/FinalSystProduction/nominal'
+    ntuplePathIn = root_dir
+
     
     #Use in_files as all the files in the first region folder - INSTEAD USE THE NOMINAL
     in_files = find_root_files(ntuplePathIn, '')
 
     check_missing = False
-    check_reeval = False
-
-    # THIS IS SUPER SLOW TO RUN
-    # NEEDS FIXING
     if check_missing:
         print("Running check for missing files...")
         missing_files = 0
@@ -200,13 +202,7 @@ if __name__ == "__main__" :
                     new_files.append(file)
                     new_relpaths.append(root_file_path)
             else:
-                #Check if the path needs reevaluating
-                if needs_reevaluating(file, outfile):
-                    new_files.append(file)
-                    new_relpaths.append(root_file_path)
-                    print("Found file that needs reevaluating: ", outfile)
-                else:
-                    already_present.append(file)
+                already_present.append(file)
             
             rel_filepaths.append(root_file_path)
             
@@ -226,40 +222,46 @@ if __name__ == "__main__" :
     #Now run the loop for all the files found.
     if not check_missing:
         new_relpaths = [os.path.relpath(f, ntuplePathIn) for f in in_files]
-        
+    
     for i, file in enumerate(new_relpaths):
         
         if i < first and first!=-1:
             continue
         if i > last and last!=-1:
             break
+        
             
         print(f"Running file {file}. {i} / {len(new_relpaths)}")
-
-        #if '700399' not in file and '700349' not in file:
-        #    continue
-            
+        
+        
         #print(file)
         
         #TODO: Check if the length of the input file is zero
+        #TODO: Check if this is actually needed??
+        '''
         try:
             nom_file = uproot.open(os.path.join(ntuplePathIn, file))
-            num_events = nom_file['nominal'].num_entries
-            if num_events == 0:
-                print("Input nominal file is empty... Skipping!")
-                continue
+            for key in nom_file.keys():
+                num_events = nom_file[key].num_entries
+                if num_events == 0:
+                    print("Input nominal file is empty... Skipping!")
+                    continue
         except:
             print("Couldn't open nominal file for some reason... skipping!")
-
-        
-        outfile = os.path.join(out_dir, file)
+        '''
         nom_file = in_files[i]
-        if os.path.exists(outfile):  #NOM FILE NOT OPENING
-            if check_reeval:
-                if not needs_reevaluating(nom_file, outfile):
-                    print("Found a file that doesn't need to be reproduced! Skipping...")
-                    continue
+        outfile = os.path.join(out_dir, file)
+        if os.path.exists(outfile):
+            if not needs_reevaluating(nom_file, outfile):
+                print("Found a file that doesn't need to be reproduced! Skipping...")
+                continue
+        else:
+            print("Found evaluation file that doesn't exist, evaluating: ", outfile)
 
+        #Make directory if it doesnt exist
+        outfile_base = os.path.dirname(outfile)
+        if not os.path.exists(outfile_base):
+            os.makedirs(outfile_base)
         
         
         merge_list = [os.path.join(base_dir, r, file) for r in region_folders]
@@ -273,28 +275,38 @@ if __name__ == "__main__" :
         if skipper:
             continue
 
-        #TODO CHECK WHETHER THE N EVENTS ARE THE SAME? WHY AREN'T THEY?
-        events = merge_files(merge_list)
-        
-        
-        
-        tracemalloc.start()
-        
-    
-        #Make directory if it doesnt exist
-        outfile_base = os.path.dirname(outfile)
-        if not os.path.exists(outfile_base):
-            os.makedirs(outfile_base)
+        trees = uproot.open(merge_list[0]).keys()
+
+        #Now read each of the trees individually and merge them into an output file
+        for i, tree in enumerate(trees):
+
+            if ";" in tree:
+                tree = tree.split(';')[0]
+                
+            print(f"Running tree {tree}: {i} / {len(trees)}")
+            events = merge_files(merge_list, tree)
             
-        with uproot.recreate(outfile) as rootfile:
-            rootfile["nominal"]=events
-        del events
-        gc.collect()
-        cur, peak = tracemalloc.get_traced_memory()
-        print(f"Saved file to: {outfile}")
-        print(f"Current mem: {cur*1e-6}MB, Peak: {peak*1e-6}MB")
-        tracemalloc.stop()
+            tracemalloc.start()
+            tree_file_name = outfile.replace('.root', f"_{tree}.root")
+            with uproot.recreate(tree_file_name) as rootfile:
+                rootfile[tree]=events
+            del events
+            gc.collect()
+            cur, peak = tracemalloc.get_traced_memory()
+            print(f"Saved tree file to: {tree_file_name}")
+            print(f"Current mem: {cur*1e-6}MB, Peak: {peak*1e-6}MB")
+            tracemalloc.stop()
+
         
+        #Hadd all the trees
+        all_tree_files = outfile.replace('.root', '_*.root')
+
+        
+        print("Hadd-ing all trees to: ", outfile)
+
+        #hadd -f targetfile source1 source2 ...
+        os.system(f"hadd -f {outfile} {all_tree_files}")
+        os.system(f"rm {all_tree_files}")
         
         print(f"Done file {i} / {len(new_relpaths)}")
         
