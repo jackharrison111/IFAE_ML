@@ -69,6 +69,8 @@ def needs_reevaluating(nom_filename, eval_filename):
     if not os.path.exists(eval_filename):
         return True
 
+    print("Nom file: ", nom_filename)
+    print("Eval file: ", eval_filename)
     #If file
     try:
         nom_f = uproot.open(nom_filename)
@@ -159,7 +161,7 @@ if __name__ == "__main__" :
     in_files = find_root_files(ntuplePathIn, '')
 
     check_missing = False
-    check_reeval = False
+    check_reeval = True
 
     # THIS IS SUPER SLOW TO RUN
     # NEEDS FIXING

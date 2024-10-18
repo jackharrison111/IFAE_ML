@@ -38,7 +38,7 @@ if __name__ == '__main__':
     os.chdir("/nfs/pic.es/user/j/jharriso/IFAE_ML")
 
     
-    job_name = "CombineNom_2809"
+    job_name = "CombineNom"
     
     
     #base_dir = '/data/at3/common/multilepton/VLL_production/evaluations'
@@ -56,10 +56,10 @@ if __name__ == '__main__':
 
     #Change this for each sys folder
     if SYSTEMATICS:
-        base_dir = '/data/at3/common/multilepton/FinalSystProduction/evaluations/Sys1'
-        base_files = '/data/at3/common/multilepton/FinalSystProduction/evaluations/Eval_Sys1'
+        base_dir = '/data/at3/common/multilepton/FinalSystProduction/evaluations/Sys4'
+        base_files = '/data/at3/common/multilepton/FinalSystProduction/evaluations/Eval_Sys4'
         
-    sys_base_dir = '/data/at3/common/multilepton/FinalSystProduction/Sys1'
+    sys_base_dir = '/data/at3/common/multilepton/FinalSystProduction/Sys4'
     
     flavour = "long"
     

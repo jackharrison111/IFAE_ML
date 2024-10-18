@@ -22,6 +22,9 @@ def needs_reevaluating(nom_filename, eval_filename):
     if not os.path.exists(eval_filename):
         return True
 
+    print("Nom file: ", nom_filename)
+    print("Eval file: ", eval_filename)
+    
     #If file
     try:
         nom_f = uproot.open(nom_filename)
@@ -37,14 +40,24 @@ def needs_reevaluating(nom_filename, eval_filename):
 
     nom_keys = nom_f.keys()
     eval_keys = eval_f.keys()
-    if len(nom_keys) != len(eval_keys):
-        print("Got different numbers of trees in nom/eval, re-evaluating!")
-        return True
+    eval_keys_split = [key.split(';')[0] if ';' in key else key for key in eval_keys]
+    
+    #if len(nom_keys) != len(eval_keys):
+    #    print("Got different numbers of trees in nom/eval, re-evaluating!")
+    #    return True
 
     diff_flag = False
     for key in nom_keys:
         if ";" in key:
             key = key.split(';')[0]
+        if key not in eval_f.keys() and key not in eval_keys_split:
+            if nom_f[key].num_entries == 0:
+                print(f"Found empty tree {key} in nominal, skipping...")
+            else:
+                print(f"Found problem with non-empty file in nominal and no tree {key} in syst")
+                diff_flag=True
+            continue
+                
         print("Found ", nom_f[key].num_entries, " entries in nom ", key," compared to: ", eval_f[key].num_entries)
         if nom_f[key].num_entries != eval_f[key].num_entries:
             diff_flag = True
@@ -136,20 +149,18 @@ def file_past_date(outfile):
         return True
     
     from datetime import datetime
-    september_1st = datetime(2024, 9, 1)
+    september_1st = datetime(2024, 9, 26)
     
     if os.path.isfile(outfile):
         # Get the modification time or creation time depending on your OS
         file_stat = os.stat(outfile)
         creation_time = datetime.fromtimestamp(file_stat.st_ctime)  # Creation time on Windows
         modification_time = datetime.fromtimestamp(file_stat.st_mtime)  # Modification time
-
+        print(creation_time, " , ", modification_time)
+        
         # Compare with September 1st, 2024
-        if creation_time >= september_1st:
-            print(f"{outfile} was created on or after September 1st, 2024")
-            return True
-        elif modification_time >= september_1st:
-            print(f"{outfile} was modified on or after September 1st, 2024")
+        if creation_time >= september_1st and modification_time >= september_1st:
+            print(f"{outfile} was created/modified on or after September 1st, 2024")
             return True
         else:
             return False
@@ -206,8 +217,9 @@ if __name__ == '__main__':
     last = args.Last
 
     check_outdate = True  #Flag for checking if after September 1st
-    check_reeval = False  #Flag for checking if output trees are the same length or reeval
+    check_reeval = True  #Flag for checking if output trees are the same length or reeval
     use_old_vm = True  #Flag to use 'working' evaluations
+    use_file_skipper = True
     
     #######################################################################################
     
@@ -286,13 +298,14 @@ if __name__ == '__main__':
     #Loop over predefined number of files
     print(train_conf['ntuple_path'])
     all_root_files = find_root_files(train_conf['ntuple_path'], '', [])
-    #print(all_root_files, " =allfiles")
+
 
     if use_old_vm:
         from preprocessing.create_variables_old import VariableMaker
     else:
         from preprocessing.create_variables import VariableMaker
-    
+    number_to_eval = 0
+    indices_to_eval = []
     for i, file in enumerate(all_root_files):
         
         if i < first and first!=-1:
@@ -306,7 +319,21 @@ if __name__ == '__main__':
         if 'tmp' in file:
             print("Skipping file as found tmp in path...")
             continue
-        
+
+        if use_file_skipper:
+            name = '/nfs/pic.es/user/j/jharriso/IFAE_ML/evaluate/needEval.txt'
+            with open(name,'r') as f:
+                files_to_skip = f.readlines()
+            files_to_skip = [(s.split(' ')[0],s.split(' ')[1])for s in files_to_skip]
+            file_to_run = False
+            for f in files_to_skip:
+                if f[0].strip().replace('\n', '') in file and f[1].strip().replace('\n', '') in file:
+                    file_to_run=True
+
+            if not file_to_run:
+                print("Skipping file as not in: ", name)
+                continue
+                
         save_path = file.split(os.path.basename(train_conf['ntuple_path']))[1]
         if save_path[0] == '/':
             save_path = save_path[1:]
@@ -316,6 +343,9 @@ if __name__ == '__main__':
 
         #Check whether the file has been produced recently or not
         if check_outdate:
+            if os.path.exists(whole_out_string):
+                print("Skipping file as outfile already exists")
+                continue
             if not file_past_date(whole_out_string):
                 print("Found file that was created before September 1st... Skipping!")
                 continue
@@ -327,7 +357,10 @@ if __name__ == '__main__':
         #if os.path.exists(whole_out_string):
         #    print(f"Skipping file {file}, since output file already exists: {whole_out_string}")
         #    continue
-        
+
+        number_to_eval+=1 
+        indices_to_eval.append(i)
+        continue
     
         #Make the variables needed into a df:
         vm = VariableMaker()
@@ -461,8 +494,11 @@ if __name__ == '__main__':
                 print("Hadd-ing all trees to: ",whole_out_string)
                 #print(f"hadd -f {whole_out_string} {all_tree_files}")
                 os.system(f"hadd -f {whole_out_string} {all_tree_files}")
-                os.system(f"rm {all_tree_files}")
-            
+                #os.system(f"rm {all_tree_files}")
+
+    
     print("Finished running over all requested files.")
+    print(f"Had {number_to_eval} to rerun...")
+    print(f"With indices: ", indices_to_eval)
     
     #################################################################################

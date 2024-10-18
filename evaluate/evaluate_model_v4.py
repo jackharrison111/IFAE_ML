@@ -36,9 +36,12 @@ def needs_reevaluating(nom_filename, eval_filename):
         print("Couldn't open the eval file, returning True to re-evaluate!")
         return True
 
-    nom_keys = nom_f.keys()
-    eval_keys = eval_f.keys()
-    if len(nom_keys) != len(eval_keys):
+    #nom_keys = nom_f.keys()
+    #eval_keys = eval_f.keys()
+    nom_keys = [key.split(';')[0] if ';' in key else key for key in nom_f.keys() ]
+    eval_keys = [key.split(';')[0] if ';' in key else key for key in eval_f.keys() ]
+
+    if len(list(set(nom_keys))) != len(list(set(eval_keys))):
         print("Got different numbers of trees in nom/eval, re-evaluating!")
         return True
 
@@ -138,20 +141,18 @@ def file_past_date(outfile):
         return True
     
     from datetime import datetime
-    september_1st = datetime(2024, 9, 1)
+    september_1st = datetime(2024, 9, 26)
     
     if os.path.isfile(outfile):
         # Get the modification time or creation time depending on your OS
         file_stat = os.stat(outfile)
         creation_time = datetime.fromtimestamp(file_stat.st_ctime)  # Creation time on Windows
         modification_time = datetime.fromtimestamp(file_stat.st_mtime)  # Modification time
-
+        print(creation_time, " , ", modification_time)
+        
         # Compare with September 1st, 2024
-        if creation_time >= september_1st:
-            print(f"{outfile} was created on or after September 1st, 2024")
-            return True
-        elif modification_time >= september_1st:
-            print(f"{outfile} was modified on or after September 1st, 2024")
+        if creation_time >= september_1st and modification_time >= september_1st:
+            print(f"{outfile} was created/modified on or after September 1st, 2024")
             return True
         else:
             return False
@@ -207,7 +208,7 @@ if __name__ == '__main__':
     first = args.First
     last = args.Last
 
-    check_reeval = False
+    check_reeval = True
     check_outdate = True
     use_old_vm = True
     
@@ -296,7 +297,7 @@ if __name__ == '__main__':
     print(train_conf['ntuple_path'])
     all_root_files = find_root_files(train_conf['ntuple_path'], '', [])
     #print(all_root_files, " =allfiles")
-
+    num_to_rerun = 0
     for i, file in enumerate(all_root_files):
         
         if i < first and first!=-1:
@@ -306,11 +307,15 @@ if __name__ == '__main__':
         
         print(f"Running file {file}. {i} / {len(all_root_files)}")
 
+        #if 'mc16d/p4416/523628' not in file:
+        #    continue
+
         #Check if the file already exists and don't recreate otherwise
         if 'tmp' in file:
             print("Skipping file as found tmp in path...")
             continue
-
+        if 'DummySig' in file:
+            continue
         save_path = file.split(os.path.basename(train_conf['ntuple_path']))[1]
         if save_path[0] == '/':
             save_path = save_path[1:]
@@ -319,7 +324,7 @@ if __name__ == '__main__':
         whole_out_string = os.path.join(outdir, save_path)
 
         if check_outdate:
-            if not file_past_date(whole_out_string):
+            if not file_past_date(file):
                 print("Found file that was created before September 1st... Skipping!")
                 continue
         
@@ -327,8 +332,6 @@ if __name__ == '__main__':
             if not needs_reevaluating(file, whole_out_string):
                 print("Found file that doesn't need evaluating... skipping!")
                 continue
-
-        
         
         #if os.path.exists(whole_out_string):
         #    print(f"Skipping file {file}, since output file already exists: {whole_out_string}")
@@ -451,5 +454,5 @@ if __name__ == '__main__':
             
             
     print("Finished running over all requested files.")
-    
+    print(f"Found {num_to_rerun} files to reproduce...")
     #################################################################################

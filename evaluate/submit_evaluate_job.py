@@ -31,10 +31,10 @@ if __name__ == '__main__':
     Q2 = True
     eval_DD = False
     
-    job_name = "OldReeval_Sys1_v2"
+    job_name = "SysDoubleCheck_S1"
     job_prefix = "Sys1"
     
-    split_amount = 50
+    split_amount = 15
     total_files = -1
     
 
@@ -124,7 +124,7 @@ if __name__ == '__main__':
                 regions['split_amount'] = split_amount
             
             s = 0
-            for i in range(regions['split_amount'], regions['total_files']+regions['split_amount'], regions['split_amount']):
+            for i in range(regions['split_amount'], regions['total_files']+2*regions['split_amount'], regions['split_amount']):
                 
                 #Make the executable file
                 sh_name = os.path.join(scriptdir,f"{region}_{s}_{i}.sh")

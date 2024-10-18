@@ -153,6 +153,8 @@ if __name__ == "__main__" :
         "Q2_1b_eu",
         "Q2_1b_u",
     ]
+
+    check_reeval = False
     
     from utils._utils import find_root_files
     
@@ -252,9 +254,10 @@ if __name__ == "__main__" :
         nom_file = in_files[i]
         outfile = os.path.join(out_dir, file)
         if os.path.exists(outfile):
-            if not needs_reevaluating(nom_file, outfile):
-                print("Found a file that doesn't need to be reproduced! Skipping...")
-                continue
+            if check_reeval:
+                if not needs_reevaluating(nom_file, outfile):
+                    print("Found a file that doesn't need to be reproduced! Skipping...")
+                    continue
         else:
             print("Found evaluation file that doesn't exist, evaluating: ", outfile)
 
