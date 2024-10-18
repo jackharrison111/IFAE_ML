@@ -198,6 +198,8 @@ if __name__ == '__main__':
     
     parser.add_argument("-last","--Last",action="store", help="Set the last file to run over", 
                         default=-1, required=False, type=int)
+
+    parser.add_argument("-z","--Inds",action="store", help="Set the indices of files to run over", required=False, type=int, nargs='+')
     
     parser.add_argument("-ni","--NtuplePathIn",action="store", help="Pass a custom ntuple path for all to read", 
                         default=False, required=False)
@@ -215,11 +217,16 @@ if __name__ == '__main__':
     region = args.Region
     first = args.First
     last = args.Last
+    indices_to_run = args.Inds
 
     check_outdate = True  #Flag for checking if after September 1st
     check_reeval = True  #Flag for checking if output trees are the same length or reeval
     use_old_vm = True  #Flag to use 'working' evaluations
     use_file_skipper = True
+
+    if indices_to_run:
+        print("Parsed specific indices to run: ", indices_to_run)
+        print("Number: ", len(indices_to_run))
     
     #######################################################################################
     
@@ -320,6 +327,10 @@ if __name__ == '__main__':
             print("Skipping file as found tmp in path...")
             continue
 
+        if args.Inds:
+            if i not in indices_to_run:
+                continue
+
         if use_file_skipper:
             name = '/nfs/pic.es/user/j/jharriso/IFAE_ML/evaluate/needEval.txt'
             with open(name,'r') as f:
@@ -360,7 +371,6 @@ if __name__ == '__main__':
 
         number_to_eval+=1 
         indices_to_eval.append(i)
-        continue
     
         #Make the variables needed into a df:
         vm = VariableMaker()
